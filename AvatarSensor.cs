@@ -12,6 +12,7 @@ public class AvatarSensor : MonoBehaviour
 {
     MotionSensorManager sensorManager;
 
+    public UnityEngine.UI.Dropdown poseDropdown;
     public enum HandModes : int { Binary, Continuous, ThreeFingers }
     [Tooltip("Choose hand finger mode")]
     public HandModes handMode = HandModes.Binary;
@@ -87,8 +88,23 @@ public class AvatarSensor : MonoBehaviour
         hand_l = GameObject.Find("thumb_01_l");
         hand_r = GameObject.Find("thumb_01_r");
         sensorManager = MotionSensorManager.Instance;
+
+        // Add listener for the dropdown to call dropdown change function
+        poseDropdown.onValueChanged.AddListener(OnDropdownValueChanged);
     }
 
+    private void OnDropdownValueChanged(int index)
+    {
+        
+        Debug.Log("Selected option: " + poseDropdown.options[index].text);
+
+        // Adjust index for the fact that 0 is not a pose
+        if (index > 0) { 
+        SetModelArmsInPose(index - 1);
+        }
+        // Reset dropdown
+        poseDropdown.value = 0;
+    }
 
     void GetKeyInput()
     {
@@ -143,7 +159,7 @@ public class AvatarSensor : MonoBehaviour
             targetJointAngle_leftarm[0] += Time.deltaTime * jointSpeed;
         }
         else if (Input.GetKey(KeyCode.Q))
-         {
+        {
             targetJointAngle_leftarm[0] -= Time.deltaTime * jointSpeed;
         }
         //2
@@ -203,7 +219,7 @@ public class AvatarSensor : MonoBehaviour
         //8
         if (Input.GetKey(KeyCode.Alpha8))
         {
-            if(handMode == HandModes.Binary)
+            if (handMode == HandModes.Binary)
                 targetJointAngle_leftarm[7] = 100.0f;
             else
                 targetJointAngle_leftarm[7] += Time.deltaTime * jointSpeed;
@@ -300,16 +316,16 @@ public class AvatarSensor : MonoBehaviour
         //8
         if (Input.GetKey(KeyCode.K))
         {
-            
-            if (handMode == HandModes.Binary) 
+
+            if (handMode == HandModes.Binary)
                 targetJointAngle_rightarm[7] = 100.0f;
             else
                 targetJointAngle_rightarm[7] += Time.deltaTime * jointSpeed;
         }
         else if (Input.GetKey(KeyCode.Comma))
         {
-            
-            if(handMode == HandModes.Binary)
+
+            if (handMode == HandModes.Binary)
                 targetJointAngle_rightarm[7] = 0.0f;
             else
                 targetJointAngle_rightarm[7] -= Time.deltaTime * jointSpeed;
@@ -349,7 +365,7 @@ public class AvatarSensor : MonoBehaviour
     }
     void MoveGolfStick()
     {
-        if(golfStickObj!=null)
+        if (golfStickObj != null)
         {
             //rot
             int sensorID = 15;
@@ -365,7 +381,7 @@ public class AvatarSensor : MonoBehaviour
             //Quaternion newRotation = Quaternion.Lerp(hand_l.transform.rotation, hand_r.transform.rotation, 0.5f);
             //golfStickObj.transform.rotation = newRotation;
             //pos
-            if(hand_l !=null && hand_r != null)
+            if (hand_l != null && hand_r != null)
             {
                 Vector3 newPos = (hand_l.transform.position + hand_r.transform.position) * 0.5f;
                 golfStickObj.transform.position = newPos;
@@ -391,20 +407,21 @@ public class AvatarSensor : MonoBehaviour
         MapBones();
         // Set model's arms to be in T-pose, if needed
 
-        //SetModelArmsInTpose();
-        const int TPOSE = 0;
-        const int NPOSE = 1;
-        const int HPOSE = 2;
-        const int LPOSE = 3;
-        SetModelArmsInPose(LPOSE);
-
         // Initial rotations and directions of the bones.
         initialRotations = new Quaternion[bones.Length];
         localRotations = new Quaternion[bones.Length];
         isBoneDisabled = new bool[bones.Length];
 
-        // Get initial bone rotations
-        GetInitialRotations();
+
+        //SetModelArmsInTpose();
+        const int TPOSE = 0;
+        const int NPOSE = 1;
+        const int HPOSE = 2;
+        const int LPOSE = 3;
+        SetModelArmsInPose(HPOSE);
+
+
+
 
         // enable all bones
         for (int i = 0; i < bones.Length; i++)
@@ -412,7 +429,7 @@ public class AvatarSensor : MonoBehaviour
             isBoneDisabled[i] = false;
         }
 
- 
+
         // if parent transform uses physics
         isRigidBody = (gameObject.GetComponent<Rigidbody>() != null);
 
@@ -428,7 +445,7 @@ public class AvatarSensor : MonoBehaviour
         }
     }
 
-    protected void TransformSpecialBoneFingers(int boneIndex, float []fingerAngles)
+    protected void TransformSpecialBoneFingers(int boneIndex, float[] fingerAngles)
     {
         float angle = 0;
         var startIndex = 0;
@@ -440,7 +457,7 @@ public class AvatarSensor : MonoBehaviour
 
         {
             // get the list of bones
-            List<HumanBodyBones> alBones = specialIndex2MultiBoneMap[boneIndex+2];
+            List<HumanBodyBones> alBones = specialIndex2MultiBoneMap[boneIndex + 2];
             startIndex = 1;
             endIndex = 3;
             angle = fingerAngles[0];
@@ -521,7 +538,7 @@ public class AvatarSensor : MonoBehaviour
             }
         }
     }
-    
+
     // fist open/close with angle
     protected void TransformSpecialBoneFist(int boneIndex, float angle)
     {
@@ -550,7 +567,7 @@ public class AvatarSensor : MonoBehaviour
         }
 
     }
-    
+
     // Apply the initial rotations fingers
     protected void TransformSpecialBoneUnfist(int boneIndex)
     {
@@ -587,7 +604,7 @@ public class AvatarSensor : MonoBehaviour
     }
 
 
-   // 
+    // 
     public bool lockHands = false;
     public bool lockArms = false;
     public bool lockTorso = false;
@@ -615,39 +632,39 @@ public class AvatarSensor : MonoBehaviour
         {
             b_back_head_enable = false;
         }
-            if (b_left_arm_enable)
+        if (b_left_arm_enable)
+        {
+            if (true)
             {
-                if (true)
-                {
-                    int sensorID = 0;
-                    int jointIndex = GetBoneIndexByJoint(JointList.JointType.ShoulderLeft, false);
-                    //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion oldRotation = bones[jointIndex].transform.rotation;
-                    bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
-                    print("Shoulder Sensor Angle: " + newRotation +"Euler: " + newRotation.eulerAngles +"difference: " + Quaternion.Lerp(oldRotation, newRotation, fLerpRatio));
-                    //print("Shoulder Sensor Angle: " + bones[jointIndex].transform.rotation + "Euler: " + bones[jointIndex].transform.rotation.eulerAngles);
+                int sensorID = 0;
+                int jointIndex = GetBoneIndexByJoint(JointList.JointType.ShoulderLeft, false);
+                //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion oldRotation = bones[jointIndex].transform.rotation;
+                bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
+                print("Shoulder Sensor Angle: " + newRotation + "Euler: " + newRotation.eulerAngles + "difference: " + Quaternion.Lerp(oldRotation, newRotation, fLerpRatio));
+                //print("Shoulder Sensor Angle: " + bones[jointIndex].transform.rotation + "Euler: " + bones[jointIndex].transform.rotation.eulerAngles);
 
             }
             if (true)
-                {
-                    int sensorID = 1;
-                    int jointIndex = GetBoneIndexByJoint(JointList.JointType.ElbowLeft, false);
-                    //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion oldRotation = bones[jointIndex].transform.rotation;
-                    bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
-                }
-                if (!lockHands)
-                {
-                    int sensorID = 2;
-                    int jointIndex = GetBoneIndexByJoint(JointList.JointType.WristLeft, false);
-                    //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
-                    Quaternion oldRotation = bones[jointIndex].transform.rotation;
-                    bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
-                }
+            {
+                int sensorID = 1;
+                int jointIndex = GetBoneIndexByJoint(JointList.JointType.ElbowLeft, false);
+                //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion oldRotation = bones[jointIndex].transform.rotation;
+                bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
             }
+            if (!lockHands)
+            {
+                int sensorID = 2;
+                int jointIndex = GetBoneIndexByJoint(JointList.JointType.WristLeft, false);
+                //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
+                Quaternion oldRotation = bones[jointIndex].transform.rotation;
+                bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
+            }
+        }
         if (b_right_arm_enable)
         {
             if (true)
@@ -692,7 +709,7 @@ public class AvatarSensor : MonoBehaviour
             }
             if (true)
             {
-                int sensorID = 7;                
+                int sensorID = 7;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.KneeLeft, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -709,12 +726,12 @@ public class AvatarSensor : MonoBehaviour
                 bones[jointIndex].transform.rotation = Quaternion.Lerp(oldRotation, newRotation, fLerpRatio);
             }
         }
- 
+
         if (b_right_leg_enable)
         {
             if (true)
             {
-                int sensorID = 9;                
+                int sensorID = 9;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.HipRight, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -723,7 +740,7 @@ public class AvatarSensor : MonoBehaviour
             }
             if (true)
             {
-                int sensorID = 10;                
+                int sensorID = 10;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.KneeRight, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -732,7 +749,7 @@ public class AvatarSensor : MonoBehaviour
             }
             if (true)
             {
-                int sensorID = 11;                
+                int sensorID = 11;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.AnkleRight, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -745,7 +762,7 @@ public class AvatarSensor : MonoBehaviour
         {
             if (true)
             {
-                int sensorID = 12;                
+                int sensorID = 12;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.SpineBase, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -755,7 +772,7 @@ public class AvatarSensor : MonoBehaviour
 
             if (true)
             {
-                int sensorID = 13;                
+                int sensorID = 13;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.SpineShoulder, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -765,7 +782,7 @@ public class AvatarSensor : MonoBehaviour
 
             if (true)
             {
-                int sensorID = 14;                
+                int sensorID = 14;
                 int jointIndex = GetBoneIndexByJoint(JointList.JointType.Neck, false);
                 //bones[jointIndex].transform.rotation = Sensor2AvatarRot2(sensorID, jointIndex);
                 Quaternion newRotation = Sensor2AvatarRot2(sensorID, jointIndex);
@@ -931,7 +948,7 @@ public class AvatarSensor : MonoBehaviour
 
         return -trans.position.y;
     }
- 
+
     // Capture the initial rotations of the bones
     protected void GetInitialRotations()
     {
@@ -1070,7 +1087,7 @@ public class AvatarSensor : MonoBehaviour
         return null;
     }
 
-    
+
 
     // Set model's arms to chosen pose (Arms as if sitting in chair)
     public void SetModelArmsInPose(int poseChar)
@@ -1079,7 +1096,7 @@ public class AvatarSensor : MonoBehaviour
         // 1 N
         // 2 H
         // 3 L
-// Default is T
+        // Default is T
         Vector3 vLeftUGoalDir = Vector3.left; // Upper arm goal
         Vector3 vLeftLGoalDir = Vector3.left; // Lower arm goal
         Vector3 vRightUGoalDir = Vector3.right; // Upper arm goal
@@ -1104,11 +1121,11 @@ public class AvatarSensor : MonoBehaviour
                 vRightUGoalDir = Vector3.down; // Upper arm goal
                 vRightLGoalDir = Vector3.forward; // Lower arm goal
                 break;
-            case 3: //L Pose Right
-                vLeftUGoalDir = Vector3.down; // Upper arm goal
-                vLeftLGoalDir = Vector3.forward; // Lower arm goal
-                vRightUGoalDir = Quaternion.Euler(-25, 0, 0) * Vector3.down; // Upper arm goal
-                vRightLGoalDir = Quaternion.Euler(0, -70, 0) * Vector3.forward; // Lower arm goal
+            case 3: //L Pose Left
+                vLeftUGoalDir = Quaternion.Euler(-25, 0, 0) * Vector3.down; // Upper arm goal
+                vLeftLGoalDir = Quaternion.Euler(0, 70, 0) * Vector3.forward; // Lower arm goal
+                vRightUGoalDir = Vector3.down; // Upper arm goal
+                vRightLGoalDir = Vector3.forward; // Lower arm goal
                 break;
 
 
@@ -1177,8 +1194,10 @@ public class AvatarSensor : MonoBehaviour
             }
         }
 
+        // Get initial bone rotations
+        GetInitialRotations();
     }
-	
+
     // If the bones to be mapped have been declared, map that bone to the model.
     protected virtual void MapBones()
     {
@@ -1213,247 +1232,247 @@ public class AvatarSensor : MonoBehaviour
     // along with its initial implementation, including following dictionary is
     // Mikhail Korchun (korchoon@gmail.com). Big thanks to this guy!
     protected static readonly Dictionary<int, HumanBodyBones> boneIndex2MecanimMap = new Dictionary<int, HumanBodyBones>
-	{
-		{0, HumanBodyBones.Hips},
-		{1, HumanBodyBones.Spine},
+    {
+        {0, HumanBodyBones.Hips},
+        {1, HumanBodyBones.Spine},
         {2, HumanBodyBones.Chest},
-		{3, HumanBodyBones.Neck},
+        {3, HumanBodyBones.Neck},
 //		{4, HumanBodyBones.Head},
 		
 		{5, HumanBodyBones.LeftUpperArm},
-		{6, HumanBodyBones.LeftLowerArm},
-		{7, HumanBodyBones.LeftHand},
+        {6, HumanBodyBones.LeftLowerArm},
+        {7, HumanBodyBones.LeftHand},
 //		{8, HumanBodyBones.LeftIndexProximal},
 //		{9, HumanBodyBones.LeftIndexIntermediate},
 //		{10, HumanBodyBones.LeftThumbProximal},
 		
 		{11, HumanBodyBones.RightUpperArm},
-		{12, HumanBodyBones.RightLowerArm},
-		{13, HumanBodyBones.RightHand},
+        {12, HumanBodyBones.RightLowerArm},
+        {13, HumanBodyBones.RightHand},
 //		{14, HumanBodyBones.RightIndexProximal},
 //		{15, HumanBodyBones.RightIndexIntermediate},
 //		{16, HumanBodyBones.RightThumbProximal},
 		
 		{17, HumanBodyBones.LeftUpperLeg},
-		{18, HumanBodyBones.LeftLowerLeg},
-		{19, HumanBodyBones.LeftFoot},
-		{20, HumanBodyBones.LeftToes},
-		
-		{21, HumanBodyBones.RightUpperLeg},
-		{22, HumanBodyBones.RightLowerLeg},
-		{23, HumanBodyBones.RightFoot},
-		{24, HumanBodyBones.RightToes},
-		
-		{25, HumanBodyBones.LeftShoulder},
-		{26, HumanBodyBones.RightShoulder},
-		{27, HumanBodyBones.LeftIndexProximal},
-		{28, HumanBodyBones.RightIndexProximal},
-		{29, HumanBodyBones.LeftThumbProximal},
-		{30, HumanBodyBones.RightThumbProximal},
-	};
+        {18, HumanBodyBones.LeftLowerLeg},
+        {19, HumanBodyBones.LeftFoot},
+        {20, HumanBodyBones.LeftToes},
+
+        {21, HumanBodyBones.RightUpperLeg},
+        {22, HumanBodyBones.RightLowerLeg},
+        {23, HumanBodyBones.RightFoot},
+        {24, HumanBodyBones.RightToes},
+
+        {25, HumanBodyBones.LeftShoulder},
+        {26, HumanBodyBones.RightShoulder},
+        {27, HumanBodyBones.LeftIndexProximal},
+        {28, HumanBodyBones.RightIndexProximal},
+        {29, HumanBodyBones.LeftThumbProximal},
+        {30, HumanBodyBones.RightThumbProximal},
+    };
 
     protected static readonly Dictionary<int, JointList.JointType> boneIndex2JointMap = new Dictionary<int, JointList.JointType>
-	{
-		{0, JointList.JointType.SpineBase},
-		{1, JointList.JointType.SpineMid},
-		{2, JointList.JointType.SpineShoulder},
-		{3, JointList.JointType.Neck},
-		{4, JointList.JointType.Head},
-		
-		{5, JointList.JointType.ShoulderLeft},
-		{6, JointList.JointType.ElbowLeft},
-		{7, JointList.JointType.WristLeft},
-		{8, JointList.JointType.HandLeft},
-		
-		{9, JointList.JointType.HandTipLeft},
-		{10, JointList.JointType.ThumbLeft},
-		
-		{11, JointList.JointType.ShoulderRight},
-		{12, JointList.JointType.ElbowRight},
-		{13, JointList.JointType.WristRight},
-		{14, JointList.JointType.HandRight},
-		
-		{15, JointList.JointType.HandTipRight},
-		{16, JointList.JointType.ThumbRight},
-		
-		{17, JointList.JointType.HipLeft},
-		{18, JointList.JointType.KneeLeft},
-		{19, JointList.JointType.AnkleLeft},
-		{20, JointList.JointType.FootLeft},
-		
-		{21, JointList.JointType.HipRight},
-		{22, JointList.JointType.KneeRight},
-		{23, JointList.JointType.AnkleRight},
-		{24, JointList.JointType.FootRight},
-	};
+    {
+        {0, JointList.JointType.SpineBase},
+        {1, JointList.JointType.SpineMid},
+        {2, JointList.JointType.SpineShoulder},
+        {3, JointList.JointType.Neck},
+        {4, JointList.JointType.Head},
+
+        {5, JointList.JointType.ShoulderLeft},
+        {6, JointList.JointType.ElbowLeft},
+        {7, JointList.JointType.WristLeft},
+        {8, JointList.JointType.HandLeft},
+
+        {9, JointList.JointType.HandTipLeft},
+        {10, JointList.JointType.ThumbLeft},
+
+        {11, JointList.JointType.ShoulderRight},
+        {12, JointList.JointType.ElbowRight},
+        {13, JointList.JointType.WristRight},
+        {14, JointList.JointType.HandRight},
+
+        {15, JointList.JointType.HandTipRight},
+        {16, JointList.JointType.ThumbRight},
+
+        {17, JointList.JointType.HipLeft},
+        {18, JointList.JointType.KneeLeft},
+        {19, JointList.JointType.AnkleLeft},
+        {20, JointList.JointType.FootLeft},
+
+        {21, JointList.JointType.HipRight},
+        {22, JointList.JointType.KneeRight},
+        {23, JointList.JointType.AnkleRight},
+        {24, JointList.JointType.FootRight},
+    };
 
     protected static readonly Dictionary<int, List<JointList.JointType>> specIndex2JointMap = new Dictionary<int, List<JointList.JointType>>
-	{
-		{25, new List<JointList.JointType> {JointList.JointType.ShoulderLeft, JointList.JointType.SpineShoulder} },
-		{26, new List<JointList.JointType> {JointList.JointType.ShoulderRight, JointList.JointType.SpineShoulder} },
-		{27, new List<JointList.JointType> {JointList.JointType.HandTipLeft, JointList.JointType.HandLeft} },
-		{28, new List<JointList.JointType> {JointList.JointType.HandTipRight, JointList.JointType.HandRight} },
-		{29, new List<JointList.JointType> {JointList.JointType.ThumbLeft, JointList.JointType.HandLeft} },
-		{30, new List<JointList.JointType> {JointList.JointType.ThumbRight, JointList.JointType.HandRight} },
-	};
+    {
+        {25, new List<JointList.JointType> {JointList.JointType.ShoulderLeft, JointList.JointType.SpineShoulder} },
+        {26, new List<JointList.JointType> {JointList.JointType.ShoulderRight, JointList.JointType.SpineShoulder} },
+        {27, new List<JointList.JointType> {JointList.JointType.HandTipLeft, JointList.JointType.HandLeft} },
+        {28, new List<JointList.JointType> {JointList.JointType.HandTipRight, JointList.JointType.HandRight} },
+        {29, new List<JointList.JointType> {JointList.JointType.ThumbLeft, JointList.JointType.HandLeft} },
+        {30, new List<JointList.JointType> {JointList.JointType.ThumbRight, JointList.JointType.HandRight} },
+    };
 
     protected static readonly Dictionary<int, JointList.JointType> boneIndex2MirrorJointMap = new Dictionary<int, JointList.JointType>
-	{
-		{0, JointList.JointType.SpineBase},
-		{1, JointList.JointType.SpineMid},
-		{2, JointList.JointType.SpineShoulder},
-		{3, JointList.JointType.Neck},
-		{4, JointList.JointType.Head},
-		
-		{5, JointList.JointType.ShoulderRight},
-		{6, JointList.JointType.ElbowRight},
-		{7, JointList.JointType.WristRight},
-		{8, JointList.JointType.HandRight},
-		
-		{9, JointList.JointType.HandTipRight},
-		{10, JointList.JointType.ThumbRight},
-		
-		{11, JointList.JointType.ShoulderLeft},
-		{12, JointList.JointType.ElbowLeft},
-		{13, JointList.JointType.WristLeft},
-		{14, JointList.JointType.HandLeft},
-		
-		{15, JointList.JointType.HandTipLeft},
-		{16, JointList.JointType.ThumbLeft},
-		
-		{17, JointList.JointType.HipRight},
-		{18, JointList.JointType.KneeRight},
-		{19, JointList.JointType.AnkleRight},
-		{20, JointList.JointType.FootRight},
-		
-		{21, JointList.JointType.HipLeft},
-		{22, JointList.JointType.KneeLeft},
-		{23, JointList.JointType.AnkleLeft},
-		{24, JointList.JointType.FootLeft},
-	};
+    {
+        {0, JointList.JointType.SpineBase},
+        {1, JointList.JointType.SpineMid},
+        {2, JointList.JointType.SpineShoulder},
+        {3, JointList.JointType.Neck},
+        {4, JointList.JointType.Head},
+
+        {5, JointList.JointType.ShoulderRight},
+        {6, JointList.JointType.ElbowRight},
+        {7, JointList.JointType.WristRight},
+        {8, JointList.JointType.HandRight},
+
+        {9, JointList.JointType.HandTipRight},
+        {10, JointList.JointType.ThumbRight},
+
+        {11, JointList.JointType.ShoulderLeft},
+        {12, JointList.JointType.ElbowLeft},
+        {13, JointList.JointType.WristLeft},
+        {14, JointList.JointType.HandLeft},
+
+        {15, JointList.JointType.HandTipLeft},
+        {16, JointList.JointType.ThumbLeft},
+
+        {17, JointList.JointType.HipRight},
+        {18, JointList.JointType.KneeRight},
+        {19, JointList.JointType.AnkleRight},
+        {20, JointList.JointType.FootRight},
+
+        {21, JointList.JointType.HipLeft},
+        {22, JointList.JointType.KneeLeft},
+        {23, JointList.JointType.AnkleLeft},
+        {24, JointList.JointType.FootLeft},
+    };
 
     protected static readonly Dictionary<int, List<JointList.JointType>> specIndex2MirrorMap = new Dictionary<int, List<JointList.JointType>>
-	{
-		{25, new List<JointList.JointType> {JointList.JointType.ShoulderRight, JointList.JointType.SpineShoulder} },
-		{26, new List<JointList.JointType> {JointList.JointType.ShoulderLeft, JointList.JointType.SpineShoulder} },
-		{27, new List<JointList.JointType> {JointList.JointType.HandTipRight, JointList.JointType.HandRight} },
-		{28, new List<JointList.JointType> {JointList.JointType.HandTipLeft, JointList.JointType.HandLeft} },
-		{29, new List<JointList.JointType> {JointList.JointType.ThumbRight, JointList.JointType.HandRight} },
-		{30, new List<JointList.JointType> {JointList.JointType.ThumbLeft, JointList.JointType.HandLeft} },
-	};
+    {
+        {25, new List<JointList.JointType> {JointList.JointType.ShoulderRight, JointList.JointType.SpineShoulder} },
+        {26, new List<JointList.JointType> {JointList.JointType.ShoulderLeft, JointList.JointType.SpineShoulder} },
+        {27, new List<JointList.JointType> {JointList.JointType.HandTipRight, JointList.JointType.HandRight} },
+        {28, new List<JointList.JointType> {JointList.JointType.HandTipLeft, JointList.JointType.HandLeft} },
+        {29, new List<JointList.JointType> {JointList.JointType.ThumbRight, JointList.JointType.HandRight} },
+        {30, new List<JointList.JointType> {JointList.JointType.ThumbLeft, JointList.JointType.HandLeft} },
+    };
 
     protected static readonly Dictionary<JointList.JointType, int> jointMap2boneIndex = new Dictionary<JointList.JointType, int>
-	{
-		{JointList.JointType.SpineBase, 0},
-		{JointList.JointType.SpineMid, 1},
-		{JointList.JointType.SpineShoulder, 2},
-		{JointList.JointType.Neck, 3},
-		{JointList.JointType.Head, 4},
-		
-		{JointList.JointType.ShoulderLeft, 5},
-		{JointList.JointType.ElbowLeft, 6},
-		{JointList.JointType.WristLeft, 7},
-		{JointList.JointType.HandLeft, 8},
-		
-		{JointList.JointType.HandTipLeft, 9},
-		{JointList.JointType.ThumbLeft, 10},
-		
-		{JointList.JointType.ShoulderRight, 11},
-		{JointList.JointType.ElbowRight, 12},
-		{JointList.JointType.WristRight, 13},
-		{JointList.JointType.HandRight, 14},
-		
-		{JointList.JointType.HandTipRight, 15},
-		{JointList.JointType.ThumbRight, 16},
-		
-		{JointList.JointType.HipLeft, 17},
-		{JointList.JointType.KneeLeft, 18},
-		{JointList.JointType.AnkleLeft, 19},
-		{JointList.JointType.FootLeft, 20},
-		
-		{JointList.JointType.HipRight, 21},
-		{JointList.JointType.KneeRight, 22},
-		{JointList.JointType.AnkleRight, 23},
-		{JointList.JointType.FootRight, 24},
-	};
+    {
+        {JointList.JointType.SpineBase, 0},
+        {JointList.JointType.SpineMid, 1},
+        {JointList.JointType.SpineShoulder, 2},
+        {JointList.JointType.Neck, 3},
+        {JointList.JointType.Head, 4},
+
+        {JointList.JointType.ShoulderLeft, 5},
+        {JointList.JointType.ElbowLeft, 6},
+        {JointList.JointType.WristLeft, 7},
+        {JointList.JointType.HandLeft, 8},
+
+        {JointList.JointType.HandTipLeft, 9},
+        {JointList.JointType.ThumbLeft, 10},
+
+        {JointList.JointType.ShoulderRight, 11},
+        {JointList.JointType.ElbowRight, 12},
+        {JointList.JointType.WristRight, 13},
+        {JointList.JointType.HandRight, 14},
+
+        {JointList.JointType.HandTipRight, 15},
+        {JointList.JointType.ThumbRight, 16},
+
+        {JointList.JointType.HipLeft, 17},
+        {JointList.JointType.KneeLeft, 18},
+        {JointList.JointType.AnkleLeft, 19},
+        {JointList.JointType.FootLeft, 20},
+
+        {JointList.JointType.HipRight, 21},
+        {JointList.JointType.KneeRight, 22},
+        {JointList.JointType.AnkleRight, 23},
+        {JointList.JointType.FootRight, 24},
+    };
 
     protected static readonly Dictionary<JointList.JointType, int> mirrorJointMap2boneIndex = new Dictionary<JointList.JointType, int>
-	{
-		{JointList.JointType.SpineBase, 0},
-		{JointList.JointType.SpineMid, 1},
-		{JointList.JointType.SpineShoulder, 2},
-		{JointList.JointType.Neck, 3},
-		{JointList.JointType.Head, 4},
-		
-		{JointList.JointType.ShoulderRight, 5},
-		{JointList.JointType.ElbowRight, 6},
-		{JointList.JointType.WristRight, 7},
-		{JointList.JointType.HandRight, 8},
-		
-		{JointList.JointType.HandTipRight, 9},
-		{JointList.JointType.ThumbRight, 10},
-		
-		{JointList.JointType.ShoulderLeft, 11},
-		{JointList.JointType.ElbowLeft, 12},
-		{JointList.JointType.WristLeft, 13},
-		{JointList.JointType.HandLeft, 14},
-		
-		{JointList.JointType.HandTipLeft, 15},
-		{JointList.JointType.ThumbLeft, 16},
-		
-		{JointList.JointType.HipRight, 17},
-		{JointList.JointType.KneeRight, 18},
-		{JointList.JointType.AnkleRight, 19},
-		{JointList.JointType.FootRight, 20},
-		
-		{JointList.JointType.HipLeft, 21},
-		{JointList.JointType.KneeLeft, 22},
-		{JointList.JointType.AnkleLeft, 23},
-		{JointList.JointType.FootLeft, 24},
-	};
+    {
+        {JointList.JointType.SpineBase, 0},
+        {JointList.JointType.SpineMid, 1},
+        {JointList.JointType.SpineShoulder, 2},
+        {JointList.JointType.Neck, 3},
+        {JointList.JointType.Head, 4},
+
+        {JointList.JointType.ShoulderRight, 5},
+        {JointList.JointType.ElbowRight, 6},
+        {JointList.JointType.WristRight, 7},
+        {JointList.JointType.HandRight, 8},
+
+        {JointList.JointType.HandTipRight, 9},
+        {JointList.JointType.ThumbRight, 10},
+
+        {JointList.JointType.ShoulderLeft, 11},
+        {JointList.JointType.ElbowLeft, 12},
+        {JointList.JointType.WristLeft, 13},
+        {JointList.JointType.HandLeft, 14},
+
+        {JointList.JointType.HandTipLeft, 15},
+        {JointList.JointType.ThumbLeft, 16},
+
+        {JointList.JointType.HipRight, 17},
+        {JointList.JointType.KneeRight, 18},
+        {JointList.JointType.AnkleRight, 19},
+        {JointList.JointType.FootRight, 20},
+
+        {JointList.JointType.HipLeft, 21},
+        {JointList.JointType.KneeLeft, 22},
+        {JointList.JointType.AnkleLeft, 23},
+        {JointList.JointType.FootLeft, 24},
+    };
 
 
     protected static readonly Dictionary<int, List<HumanBodyBones>> specialIndex2MultiBoneMap = new Dictionary<int, List<HumanBodyBones>>
-	{
-		{27, new List<HumanBodyBones> {  // left fingers
+    {
+        {27, new List<HumanBodyBones> {  // left fingers
 				HumanBodyBones.LeftIndexProximal,
-				HumanBodyBones.LeftIndexIntermediate,
-				HumanBodyBones.LeftIndexDistal,
-				HumanBodyBones.LeftMiddleProximal,
-				HumanBodyBones.LeftMiddleIntermediate,
-				HumanBodyBones.LeftMiddleDistal,
-				HumanBodyBones.LeftRingProximal,
-				HumanBodyBones.LeftRingIntermediate,
-				HumanBodyBones.LeftRingDistal,
-				HumanBodyBones.LeftLittleProximal,
-				HumanBodyBones.LeftLittleIntermediate,
-				HumanBodyBones.LeftLittleDistal,
-			}},
-		{28, new List<HumanBodyBones> {  // right fingers
+                HumanBodyBones.LeftIndexIntermediate,
+                HumanBodyBones.LeftIndexDistal,
+                HumanBodyBones.LeftMiddleProximal,
+                HumanBodyBones.LeftMiddleIntermediate,
+                HumanBodyBones.LeftMiddleDistal,
+                HumanBodyBones.LeftRingProximal,
+                HumanBodyBones.LeftRingIntermediate,
+                HumanBodyBones.LeftRingDistal,
+                HumanBodyBones.LeftLittleProximal,
+                HumanBodyBones.LeftLittleIntermediate,
+                HumanBodyBones.LeftLittleDistal,
+            }},
+        {28, new List<HumanBodyBones> {  // right fingers
 				HumanBodyBones.RightIndexProximal,
-				HumanBodyBones.RightIndexIntermediate,
-				HumanBodyBones.RightIndexDistal,
-				HumanBodyBones.RightMiddleProximal,
-				HumanBodyBones.RightMiddleIntermediate,
-				HumanBodyBones.RightMiddleDistal,
-				HumanBodyBones.RightRingProximal,
-				HumanBodyBones.RightRingIntermediate,
-				HumanBodyBones.RightRingDistal,
-				HumanBodyBones.RightLittleProximal,
-				HumanBodyBones.RightLittleIntermediate,
-				HumanBodyBones.RightLittleDistal,
-			}},
-		{29, new List<HumanBodyBones> {  // left thumb
+                HumanBodyBones.RightIndexIntermediate,
+                HumanBodyBones.RightIndexDistal,
+                HumanBodyBones.RightMiddleProximal,
+                HumanBodyBones.RightMiddleIntermediate,
+                HumanBodyBones.RightMiddleDistal,
+                HumanBodyBones.RightRingProximal,
+                HumanBodyBones.RightRingIntermediate,
+                HumanBodyBones.RightRingDistal,
+                HumanBodyBones.RightLittleProximal,
+                HumanBodyBones.RightLittleIntermediate,
+                HumanBodyBones.RightLittleDistal,
+            }},
+        {29, new List<HumanBodyBones> {  // left thumb
 				HumanBodyBones.LeftThumbProximal,
-				HumanBodyBones.LeftThumbIntermediate,
-				HumanBodyBones.LeftThumbDistal,
-			}},
-		{30, new List<HumanBodyBones> {  // right thumb
+                HumanBodyBones.LeftThumbIntermediate,
+                HumanBodyBones.LeftThumbDistal,
+            }},
+        {30, new List<HumanBodyBones> {  // right thumb
 				HumanBodyBones.RightThumbProximal,
-				HumanBodyBones.RightThumbIntermediate,
-				HumanBodyBones.RightThumbDistal,
-			}},
-	};
+                HumanBodyBones.RightThumbIntermediate,
+                HumanBodyBones.RightThumbDistal,
+            }},
+    };
 
 }
 public class JointList
