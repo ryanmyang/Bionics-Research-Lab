@@ -13,6 +13,8 @@ public class AvatarSensor : MonoBehaviour
     MotionSensorManager sensorManager;
 
     public UnityEngine.UI.Dropdown poseDropdown;
+    public UnityEngine.UI.InputField LPoseInputField;
+
     public enum HandModes : int { Binary, Continuous, ThreeFingers }
     [Tooltip("Choose hand finger mode")]
     public HandModes handMode = HandModes.Binary;
@@ -418,7 +420,7 @@ public class AvatarSensor : MonoBehaviour
         const int NPOSE = 1;
         const int HPOSE = 2;
         const int LPOSE = 3;
-        SetModelArmsInPose(HPOSE);
+        SetModelArmsInPose(TPOSE);
 
 
 
@@ -1054,6 +1056,15 @@ public class AvatarSensor : MonoBehaviour
         // Restore the initial rotation
         transform.rotation = initialRotation;
     }
+
+
+
+
+
+
+
+
+
     /// <summary>
     /// Gets the bone index by joint type.
     /// </summary>
@@ -1087,6 +1098,27 @@ public class AvatarSensor : MonoBehaviour
         return null;
     }
 
+    // Parse the L Pose input field for two floats in num1,num2 format, return 20,20 as default
+    protected float[] getLPoseAngles()
+    {
+        Debug.Log("L Pose");
+        string inputString = LPoseInputField.text;
+        float[] result = new float[2];
+        string[] parts = inputString.Split(',');
+        if (parts.Length == 2 && float.TryParse(parts[0], out float x) && float.TryParse(parts[1], out float y))
+        {
+            result[0] = x;
+            result[1] = y;
+        }
+        else
+        {
+            // Parsing failed, return default values
+            result[0] = 20.0f;
+            result[1] = 20.0f;
+        }
+        Debug.Log(result);
+        return result;
+    }
 
 
     // Set model's arms to chosen pose (Arms as if sitting in chair)
@@ -1122,8 +1154,10 @@ public class AvatarSensor : MonoBehaviour
                 vRightLGoalDir = Vector3.forward; // Lower arm goal
                 break;
             case 3: //L Pose Left
-                vLeftUGoalDir = Quaternion.Euler(-25, 0, 0) * Vector3.down; // Upper arm goal
-                vLeftLGoalDir = Quaternion.Euler(0, 70, 0) * Vector3.forward; // Lower arm goal
+                float[] LAngles;
+                LAngles = getLPoseAngles();
+                vLeftUGoalDir = Quaternion.Euler(-LAngles[0], 0, 0) * Vector3.down; // Upper arm goal
+                vLeftLGoalDir = Quaternion.Euler(0, 90-LAngles[1], 0) * Vector3.forward; // Lower arm goal
                 vRightUGoalDir = Vector3.down; // Upper arm goal
                 vRightLGoalDir = Vector3.forward; // Lower arm goal
                 break;
