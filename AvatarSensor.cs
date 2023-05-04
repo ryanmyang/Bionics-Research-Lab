@@ -12,6 +12,12 @@ public class AvatarSensor : MonoBehaviour
 {
     MotionSensorManager sensorManager;
 
+    public const int TPOSE = 0;
+    public const int NPOSE = 1;
+    public const int HPOSE = 2;
+    public const int LPOSE = 3;
+    public const int NPPOSE = 4;
+
     public UnityEngine.UI.Dropdown poseDropdown;
     public UnityEngine.UI.InputField LPoseInputField;
 
@@ -105,7 +111,7 @@ public class AvatarSensor : MonoBehaviour
         SetModelArmsInPose(index - 1);
         }
         // Reset dropdown
-        poseDropdown.value = 0;
+        //poseDropdown.value = 0;
     }
 
     void GetKeyInput()
@@ -416,10 +422,7 @@ public class AvatarSensor : MonoBehaviour
 
 
         //SetModelArmsInTpose();
-        const int TPOSE = 0;
-        const int NPOSE = 1;
-        const int HPOSE = 2;
-        const int LPOSE = 3;
+        
         SetModelArmsInPose(TPOSE);
 
 
@@ -1128,6 +1131,7 @@ public class AvatarSensor : MonoBehaviour
         // 1 N
         // 2 H
         // 3 L
+        // 4 NP
         // Default is T
         Vector3 vLeftUGoalDir = Vector3.left; // Upper arm goal
         Vector3 vLeftLGoalDir = Vector3.left; // Lower arm goal
@@ -1160,6 +1164,12 @@ public class AvatarSensor : MonoBehaviour
                 vLeftLGoalDir = Quaternion.Euler(0, 90-LAngles[1], 0) * Vector3.forward; // Lower arm goal
                 vRightUGoalDir = Vector3.down; // Upper arm goal
                 vRightLGoalDir = Vector3.forward; // Lower arm goal
+                break;
+            case 4: //N Pose
+                vLeftUGoalDir = Vector3.up; // Upper arm goal
+                vLeftLGoalDir = Vector3.up; // Lower arm goal
+                vRightUGoalDir = Vector3.up; // Upper arm goal
+                vRightLGoalDir = Vector3.up; // Lower arm goal
                 break;
 
 
