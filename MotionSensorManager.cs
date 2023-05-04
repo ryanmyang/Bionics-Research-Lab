@@ -14,7 +14,7 @@ public class MotionSensorManager : MonoBehaviour
 	const int max_sensor_num = 20;
 	const int POSE_NUM = 10;
 	Quaternion[] quatRawSensor = new Quaternion[max_sensor_num];
-	Quaternion[] quatSensor = new Quaternion[max_sensor_num];
+	public Quaternion[] quatSensor = new Quaternion[max_sensor_num];
 	//Quaternion[] quatSensor_offset = new Quaternion[max_sensor_num];
     Quaternion[] quatSensorAveragedOffset = new Quaternion[max_sensor_num];
 	Quaternion[][] quatSensorPoseOffset = new Quaternion[POSE_NUM][];
@@ -47,6 +47,8 @@ public class MotionSensorManager : MonoBehaviour
 	{
 		count++;
 		getMotionSensorData();
+		Debug.Log(quatSensor[0]);
+
 	}
 	Quaternion sensorRotToUnityRot(Quaternion rawSensorRotation)
 	{
@@ -63,13 +65,16 @@ public class MotionSensorManager : MonoBehaviour
 	}
 	void getMotionSensorData()
 	{
+		Debug.Log("getMotionSensorData");
 		float[] mydata = new float[max_sensor_num * 4];
 		sensor_data.GetMotionSensorData(ref mydata);
+		Debug.Log("mydata is " + mydata[1]);
 		for (int i = 0; i < max_sensor_num; i++)
 		{
 			int dataIndex = 4 * i;
 			quatRawSensor[i] = new Quaternion(mydata[dataIndex + 1], mydata[dataIndex + 2], mydata[dataIndex + 3], mydata[dataIndex + 0]);
 			quatSensor[i] = sensorRotToUnityRot(quatRawSensor[i]);
+			Debug.Log(quatSensor[0]);
 		}
 
 		if (bAutoBodyRotation)
