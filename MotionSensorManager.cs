@@ -16,8 +16,9 @@ public class MotionSensorManager : MonoBehaviour
 	Quaternion[] quatRawSensor = new Quaternion[max_sensor_num];
 	public Quaternion[] quatSensor = new Quaternion[max_sensor_num];
 	//Quaternion[] quatSensor_offset = new Quaternion[max_sensor_num];
-    Quaternion[] quatSensorAveragedOffset = new Quaternion[max_sensor_num];
+    public Quaternion[] quatSensorAveragedOffset = new Quaternion[max_sensor_num];
 	Quaternion[][] quatSensorPoseOffset = new Quaternion[POSE_NUM][];
+	//public Quaternion[] viewFirstQSPO = new Quaternion[max_sensor_num];
 	Quaternion[][] quatSensorPoseOffsetAdjusted = new Quaternion[POSE_NUM][];
 
 	bool[] poseOffsetInitialized = new bool[POSE_NUM];
@@ -30,10 +31,15 @@ public class MotionSensorManager : MonoBehaviour
 	void Start()
 	{
 		initMotionSensor();
+		quatSensorPoseOffset[0][0] = Quaternion.Euler(10,10,10);
 	}
 	void Awake()
 	{
 		instance = this;
+		for (int i = 0; i < POSE_NUM; i++)
+		{
+			quatSensorPoseOffset[i] = new Quaternion[max_sensor_num];
+		}
 	}
 	public static MotionSensorManager Instance
 	{
@@ -45,6 +51,7 @@ public class MotionSensorManager : MonoBehaviour
 	//void Update()
 	void FixedUpdate()
 	{
+		
 		count++;
 		getMotionSensorData();
 		Debug.Log(quatSensor[0]);
@@ -74,6 +81,9 @@ public class MotionSensorManager : MonoBehaviour
 			int dataIndex = 4 * i;
 			quatRawSensor[i] = new Quaternion(mydata[dataIndex + 1], mydata[dataIndex + 2], mydata[dataIndex + 3], mydata[dataIndex + 0]);
 			quatSensor[i] = sensorRotToUnityRot(quatRawSensor[i]);
+			//test
+			quatSensorPoseOffset[0][i] = sensorRotToUnityRot(quatRawSensor[i]);
+			//viewFirstQSPO[i] = quatSensorPoseOffset[0][i];
 			Debug.Log(quatSensor[0]);
 		}
 
@@ -84,9 +94,13 @@ public class MotionSensorManager : MonoBehaviour
 	}
 
 
-	void savePoseOffset(int pose)
+	public void savePoseOffset(int pose)
 	{
-		
+		Debug.LogError("savePoseOffset");
+		if (instance== null)
+        {
+			Debug.LogError("No instance during savePoseOffset");
+        }
 
 		float[] mydata = new float[max_sensor_num * 4];
 		sensor_data.GetMotionSensorData(ref mydata);
@@ -96,7 +110,9 @@ public class MotionSensorManager : MonoBehaviour
 		{
 			int dataIndex = 4 * i;
 			quatRawSensor[i] = new Quaternion(mydata[dataIndex + 1], mydata[dataIndex + 2], mydata[dataIndex + 3], mydata[dataIndex + 0]);
-			quatSensorPoseOffset[pose][i] = sensorRotToUnityRot(quatRawSensor[i]);
+			// Need to change 0s back to pose
+			quatSensorPoseOffset[0][i] = sensorRotToUnityRot(quatRawSensor[i]);
+			//viewFirstQSPO[i] = quatSensorPoseOffset[0][i];
 		}
 
 		// Marked as initialized
@@ -105,10 +121,13 @@ public class MotionSensorManager : MonoBehaviour
 		// Calculate new average
 
 		// Start the average at T pose which was set originally
-		quatSensorAveragedOffset = quatSensorPoseOffset[AvatarSensor.TPOSE];
+		Array.Copy(quatSensorPoseOffset[AvatarSensor.TPOSE], quatSensorAveragedOffset, max_sensor_num);
+		Debug.LogError("quatSensorAveragedOffset updated by savePoseOffset");
+		//quatSensorAveragedOffset = quatSensorPoseOffset[AvatarSensor.TPOSE];
 
 		//// Convert Pose offset to TPose
-		Vector3 cw = new Vector3(0, 0, -90);
+        ///// COMENTED OUT AVERAGING FOR TESTING
+		/*Vector3 cw = new Vector3(0, 0, -90);
 		Vector3 ccw = new Vector3(0, 0, 90);
 		switch (pose)
 		{
@@ -125,12 +144,13 @@ public class MotionSensorManager : MonoBehaviour
 				break;
 		}
 
-		calculateAverageOffset();
+		calculateAverageOffset();*/
 
 	}
 
     void calculateAverageOffset()
     {
+		Debug.LogError("avgoffset");
 		Vector3[][] vectors = new Vector3[POSE_NUM][];
 		Quaternion[][] quaternions = quatSensorPoseOffsetAdjusted;
 		Vector3[] averageVectors = new Vector3[max_sensor_num];
@@ -170,15 +190,17 @@ public class MotionSensorManager : MonoBehaviour
 			Quaternion averageQuaternion = new Quaternion(averageVectors[i].x, averageVectors[i].y, averageVectors[i].z, 0);
 			averageQuaternion.w = Mathf.Sqrt(1 - averageQuaternion.x * averageQuaternion.x - averageQuaternion.y * averageQuaternion.y - averageQuaternion.z * averageQuaternion.z);
 			quatSensorAveragedOffset[i] = averageQuaternion;
+			Debug.LogError("averageoffset() updated averagedOffset");
+
 		}
-		
+
 		// The resulting averageQuaternion should now represent the average or mean quaternion of the input quaternions.
 
 
 		////// End untested gpt
 
 
-		
+
 	}
 
     // NOTE: ASSUMING MAX SENSORNUM MEANS THE COUNT, NOT THE MAX INDEX
@@ -226,18 +248,27 @@ public class MotionSensorManager : MonoBehaviour
 
 	void initMotionSensor()
 	{
+		Debug.LogError("initMotionSensor");
 		for (int i = 0; i < max_sensor_num; i++)
 		{
 			quatSensor[i] = Quaternion.identity;
-			quatSensorPoseOffset[0][i] = Quaternion.identity;
+			if (instance == null)
+			{
+				Debug.LogError("No instance during savePoseOffset");
+			}
+			this.quatSensorPoseOffset[0][i] = Quaternion.identity;
 		}
 		sensor_data.OpenMotionSensorData();
         // Assume start is in tpose for initial tracking
 		savePoseOffset(AvatarSensor.TPOSE);
 
-        // Copy Tpose offset into averaged offset to start
-		quatSensorAveragedOffset = quatSensorPoseOffset[AvatarSensor.TPOSE];
-		
+		// Copy Tpose offset into averaged offset to start
+		Array.Copy(quatSensorPoseOffset[AvatarSensor.TPOSE], quatSensorAveragedOffset, max_sensor_num);
+
+		//quatSensorAveragedOffset = quatSensorPoseOffset[AvatarSensor.TPOSE];
+		//Debug.LogError("quatSensorAveragedOffset updated by initMotionSensor");
+
+
 
 	}
 	public Quaternion getSensorRotation(int sensorID)
