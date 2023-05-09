@@ -99,6 +99,9 @@ public class AvatarSensor : MonoBehaviour
 
         // Add listener for the dropdown to call dropdown change function
         poseDropdown.onValueChanged.AddListener(OnDropdownValueChanged);
+        
+        //SetModelArmsInTpose();
+        SetModelArmsInPose(TPOSE);
     }
 
     private void OnDropdownValueChanged(int index)
@@ -106,7 +109,7 @@ public class AvatarSensor : MonoBehaviour
         
         Debug.Log("Selected option: " + poseDropdown.options[index].text);
 
-        // Adjust index for the fact that 0 is not a pose
+        // Adjust index for the fact that 0 in the dropdown is not a pose
         if (index > 0) { 
         SetModelArmsInPose(index - 1);
         }
@@ -397,6 +400,8 @@ public class AvatarSensor : MonoBehaviour
         }
     }
 
+
+
     public void Awake()
     {
         // check for double start
@@ -423,7 +428,7 @@ public class AvatarSensor : MonoBehaviour
 
         //SetModelArmsInTpose();
         
-        SetModelArmsInPose(TPOSE);
+        //SetModelArmsInPose(TPOSE);
 
 
 
@@ -1127,6 +1132,7 @@ public class AvatarSensor : MonoBehaviour
     // Set model's arms to chosen pose (Arms as if sitting in chair)
     public void SetModelArmsInPose(int poseChar)
     {
+        sensorManager.savePoseOffset(poseChar);
         // 0 T
         // 1 N
         // 2 H
@@ -1240,6 +1246,7 @@ public class AvatarSensor : MonoBehaviour
 
         // Get initial bone rotations
         GetInitialRotations();
+       
     }
 
     // If the bones to be mapped have been declared, map that bone to the model.
