@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
@@ -40,6 +40,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     const int gameObjDimY = 10;
 
     int max_gameObjNum = gameObjDimX * gameObjDimY;
+
     // const int max_gameObjNum = gameObjDimX * gameObjDimY;
     // changed by ryan
     GameMenuControl game_MenuControl;
@@ -98,15 +99,32 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     DataGameResultLog gameResultLog;
     DataOculusTouch DataOculus;
     public bool b_enableMotionDataCollection = true;
+    public GameObject spherePrefab;
     Vector3[] sphereCoords;
 
-    public List<Vector3> touched_sphere_coords = new List<Vector3>();
-    public List<Vector3> touched_sphere_polar_coords = new List<Vector3>();
+    public List<Vector3> touched_sphere_coords_left = new List<Vector3>();
+    public List<Vector3> touched_sphere_polar_coords_left = new List<Vector3>();
+    public List<Vector3> touched_sphere_coords_right = new List<Vector3>();
+    public List<Vector3> touched_sphere_polar_coords_right = new List<Vector3>();
+
+    GameObject[] leftSphereObjs = null;
+    GameObject[] rightSphereObjs = null;
+    Vector3[] cartesianSphereCoords = null;
+    int numCoordsInSphere = 0;
 
     [SerializeField]
     private bool exportBoolean;
 
-    // Your other script logic here
+    [SerializeField]
+    private bool leftArmSphereActive;
+    [SerializeField]
+    private bool rightArmSphereActive;
+
+    [SerializeField]
+    private Material sphereMaterial;
+    GameObject leftOriginSphere = null;
+    GameObject rightOriginSphere = null;
+
 
     public bool ExportBoolean
     {
@@ -120,14 +138,22 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                 if (exportBoolean)
                 {
                     // Your logic here
-                    Debug.LogWarning("myBoolean is true, do something!");
-                    if (touched_sphere_coords.Count > 0) {
+                    Debug.LogWarning("Exporting!");
+                    if (touched_sphere_coords_left.Count > 0) {
                         System.DateTime currentDateTime = System.DateTime.Now;
 
                          // Format the DateTime object as MM_DD_HH_SS
                         string formattedTime = currentDateTime.ToString("MM_dd_HH_ss");
-                        ExportToJSON(touched_sphere_coords,$"{formattedTime}_touched_sphere_coords.json");
-                        ExportToJSON(touched_sphere_polar_coords,$"{formattedTime}_touched_sphere_polar.json");
+                        ExportToJSON(touched_sphere_coords_left,$"{formattedTime}_touched_sphere_coords_left.json");
+                        ExportToJSON(touched_sphere_polar_coords_left,$"{formattedTime}_touched_sphere_polar_left.json");
+                    }
+                    if (touched_sphere_coords_right.Count > 0) {
+                        System.DateTime currentDateTime = System.DateTime.Now;
+
+                         // Format the DateTime object as MM_DD_HH_SS
+                        string formattedTime = currentDateTime.ToString("MM_dd_HH_ss");
+                        ExportToJSON(touched_sphere_coords_right,$"{formattedTime}_touched_sphere_coords_right.json");
+                        ExportToJSON(touched_sphere_polar_coords_right,$"{formattedTime}_touched_sphere_polar_right.json");
                     }
                     exportBoolean = false;
 
@@ -221,16 +247,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         //LocalAvatar = GameObject.Find("LocalAvatar");
         //hand_l = getChildGameObject(LocalAvatar, "hand_left");
         //hand_r = getChildGameObject(LocalAvatar, "hand_right");
-        //        avatarData = new AvatarData();
-
-
-
-
-
-
-
-
-
+        //        avatarData = new AvatarData()
         // CONFIGURE SPHERE GENERATION HERE
 
         Debug.LogWarning("Before generation");
@@ -251,14 +268,33 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         max_gameObjNum = (1+ divisions_per_rad*2 ) * (1+ divisions_per_rad*2) * (1+ divisions_per_rad*2);
         // Array.Resize( ref sphereCoords, max_gameObjNum ); //going to use new vector3 array instead
         Debug.LogWarning("Before cartesianspherecoords");
+        leftArmSphereActive = false;
+        rightArmSphereActive = false;
+        if (gamePlaymode == GamePlayMode.Bilateral) {
+            leftArmSphereActive = true;
+            rightArmSphereActive = true;
+        }
+        else if (gamePlaymode== GamePlayMode.Left) {
+            leftArmSphereActive = true;
+        }
+        else if (gamePlaymode== GamePlayMode.Right) {
+            rightArmSphereActive = true;
+        }
+        Debug.LogWarning("GamePlaymode: " + gamePlaymode);
+        // Reworked Process:
+        // 1: Declare gameobj list for each sphere to generate (Moved to global scope)
+        
+        // 2: Generate cartesian sphere coordinates we will use to lay out the game objects, storing the number of coords in this layout
+        numCoordsInSphere = -1;
+        cartesianSphereCoords = GenerateCartesianSphereCoordinates(generation_radius, divisions_per_rad, ref numCoordsInSphere);
+        // Create Sphere Wall should generate the proper number of spheres based on the coordinates it is given, and centered on the given center object
+        // Moved to resetGame
 
-        Vector3[] cartesianSphereCoords = GenerateCartesianSphereCoordinates(generation_radius, divisions_per_rad);
 
-
-        createSphereWall();
-        setSpherePosition(cartesianSphereCoords);
+        Debug.LogWarning("Done with Ryan's setup");
         
         resetGame();
+        Debug.LogWarning("Just finished resetgame");
         audioSource = GetComponent<AudioSource>();
         game_MenuControl = GameMenuControl.Instance;
         //log
@@ -266,6 +302,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         gameResultLog.strGameName = strGameName;
         gameResultLog.StartGameResultFile();
         //ui
+        Debug.LogWarning("About to call initUIButtons");
         initUIButtons();
         //data
         if (deviceConfig.hardwareType == ControllerHardwareType.OculusTouch)
@@ -322,6 +359,8 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     }
     void Awake()
     {
+        leftOriginSphere = GameObject.Find("SphereLeft");
+        rightOriginSphere = GameObject.Find("SphereRight");
 
     }
     void mirror_obj()
@@ -349,7 +388,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                 if (body_JNT != null)
                 {
                     avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
-                    setSpherePosition(sphereCoords);
+                    handleSetSpherePositions();
                 }
                 waitTime_initialize = fCurrentTime;
             }
@@ -361,7 +400,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                     {
                         waitTime_initialize = -1;
                         avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
-                        setSpherePosition(sphereCoords);
+                        handleSetSpherePositions();
                     }
                 }
             }
@@ -376,11 +415,11 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         showSpheres();
         //return;
 
-        if (game_MenuControl.b_showMenu == true)
-            // bGamePause = true;
-            Debug.Log("bGamePause=true commented out by Ryan");
-        else
-            bGamePause = false;
+        // if (game_MenuControl.b_showMenu == true)
+        //     // bGamePause = true;
+        //     // Debug.Log("bGamePause=true commented out by Ryan");
+        // else
+        //     bGamePause = false;
 
         if (bGameRunning == false || bGamePause == true)
             return;
@@ -601,8 +640,8 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     //    {
     //        i_gameResult_touched_count++;
     //        calculateResult();
-    //        sphereObj[shpereIndex].GetComponent<Renderer>().material.color = Color.green;
-    //        other.GetComponent<Renderer>().material.color = Color.green;
+    //        sphereObj[shpereIndex].GetComponent<Renderer>().material.color = Color.red;
+    //        other.GetComponent<Renderer>().material.color = Color.red;
     //        shpereIndex++;
     //        if (shpereIndex == max_gameObjNum)
     //        //if (shpereIndex == 1)
@@ -615,13 +654,14 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
 
     void OnTriggerStay(Collider other)
     {
+
         if (bGameRunning == false || bGamePause == true)
             return;
         if (gamePlaymode == GamePlayMode.Bilateral)
         {
             //if (other.gameObject.name == "touched")
             //    return;
-            if (other.gameObject.GetComponent<Renderer>().material.color == Color.green)//touched
+            if (other.gameObject.GetComponent<Renderer>().material.color == Color.red)//touched
                 return;
             if (other.gameObject.name.Contains("Sphere"))
             {
@@ -644,16 +684,16 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
 
                         left_touching = 0;
                         right_touching = 0;
-                        if (other.GetComponent<Renderer>().material.color != Color.green)
+                        if (other.GetComponent<Renderer>().material.color != Color.red)
                         {
                             foreach(GameObject obj in GameObject.FindObjectsOfType<GameObject>())//change color for both matching balls
                             {
                                 if(obj.name == right_touch_ObjName)
                                 {
-                                    obj.GetComponent<Renderer>().material.color = Color.green;
+                                    obj.GetComponent<Renderer>().material.color = Color.red;
                                 }
                             }
-                            //other.GetComponent<Renderer>().material.color = Color.green;
+                            //other.GetComponent<Renderer>().material.color = Color.red;
                             i_gameResult_touched_count++;
                             //obj.name = "touched";
                             shpereIndex++;
@@ -670,23 +710,35 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.LogWarning("Triggerenter");
         if (bGameRunning == false || bGamePause == true)
             return;
         timeoutPlay = 0;
         max_timeoutPlay = 10;
 
         // Ryan's notes: This is the touch area
-        if (gamePlaymode != GamePlayMode.Bilateral)
-        {
+        // if (gamePlaymode != GamePlayMode.Bilateral)
+        // {
+            Debug.LogWarning("Other name: " + other.gameObject.name);
             if (other.gameObject.name.Contains("Sphere"))
             {
-                if (other.GetComponent<Renderer>().material.color != Color.green)
+                Debug.LogWarning("Triggerenter on a sphere");
+                if (other.GetComponent<Renderer>().material.color != Color.red)
                 {
                     i_gameResult_touched_count++;
-                    touched_sphere_coords.Add(other.GetComponent<SphereData>().sphereCoords);
-                    touched_sphere_polar_coords.Add(CartesianToSpherical(other.GetComponent<SphereData>().sphereCoords));
+                    if (other.gameObject.name.Contains("Right"))
+                    {
+                        touched_sphere_coords_right.Add(other.GetComponent<SphereData>().sphereCoords);
+                        touched_sphere_polar_coords_right.Add(CartesianToSpherical(other.GetComponent<SphereData>().sphereCoords));
+                    }
+                    if (other.gameObject.name.Contains("Left"))
+                    {
+                        touched_sphere_coords_left.Add(other.GetComponent<SphereData>().sphereCoords);
+                        touched_sphere_polar_coords_left.Add(CartesianToSpherical(other.GetComponent<SphereData>().sphereCoords));
+                    }
+                    
                     calculateResult();
-                    other.GetComponent<Renderer>().material.color = Color.green;
+                    other.GetComponent<Renderer>().material.color = Color.red;
                     //other.name = "touched";
                     shpereIndex++;
                     if (shpereIndex == max_gameObjNum)
@@ -696,9 +748,9 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
  
 
             }
-        }
-        else
-        {
+        // }
+        // else
+        // {
             //if (other.gameObject.name.Contains("Sphere"))
             //{
             //    if (other.gameObject.transform.parent.name.Contains("Clone"))
@@ -717,8 +769,8 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             //        {
             //            i_gameResult_touched_count++;
             //            calculateResult();
-            //            other.GetComponent<Renderer>().material.color = Color.green;
-            //            //sphereObj[shpereIndex].GetComponent<Renderer>().material.color = Color.green;
+            //            other.GetComponent<Renderer>().material.color = Color.red;
+            //            //sphereObj[shpereIndex].GetComponent<Renderer>().material.color = Color.red;
             //            shpereIndex++;
             //            if (shpereIndex == max_gameObjNum)
             //                gotoNextGamePlay();
@@ -726,7 +778,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             //        }
             //    }
             //}
-        }
+        // }
     }
     public void OnChildTriggerEnter(Collider other)
     {
@@ -778,7 +830,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             rotation = new Vector3(rotation.x, -rotation.y, 180 - rotation.z);
         flower_rot_angle = rotation;
 
-        setSpherePosition(sphereCoords);
+        handleSetSpherePositions();
 
         if (sphereObjMirror != null)
             Destroy(sphereObjMirror);
@@ -849,16 +901,16 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     //    //    }
     //    //}
     //}
-    void createSphereWall()
+    void createSphereWall(ref GameObject[] objs,int num, GameObject centerObj)
     {
-        sphereObj = new GameObject[max_gameObjNum];
-        sphereObj[0] = GameObject.Find("Sphere0");
-        spheresAllObj = GameObject.Find("SpheresAll");
-        for (int i = 1;i< max_gameObjNum; i++)
+        Debug.LogWarning("Entered createSphereWall");
+        objs = new GameObject[num];
+        objs[0] = centerObj;
+        for (int i = 1;i< num; i++)
         {
-            sphereObj[i] = Instantiate(sphereObj[0], spheresAllObj.transform) as GameObject;
-            sphereObj[i].name = "Sphere" + i;
-            sphereObj[i].tag = "Sphere";
+            objs[i] = Instantiate(spherePrefab, centerObj.transform) as GameObject;
+            objs[i].name = centerObj.name + i;
+            objs[i].tag = "Sphere";
         }
     }
 
@@ -881,9 +933,10 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     }
     public Vector3 paintBoardCenterPosition = new Vector3(0.2f, 0, 0);
     public float globalScale = 1.0f;
-    void setSpherePosition(Vector3[] arr)
+    void setSpherePosition(Vector3[] coordArr, GameObject[] objArr = null)
     {
-        setSpherePositions(arr);
+        // Debug.LogWarning("setSpherePosition entered. objarr is null? : " + (objArr==null).ToString());
+        setSpherePositions(coordArr, objArr);
         return;
         // Changed to spherical by ryan
 
@@ -937,7 +990,10 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                     posNew.x = pos1.x + gapX * i;
                     posNew.z = pos1.z;
                     sphereObj[i * gameObjDimY + j].transform.position = posNew + centerOffset1;
-                    sphereObj[i * gameObjDimY + j].GetComponent<Renderer>().material.color = Color.white;
+                    sphereObj[i * gameObjDimY + j].GetComponent<Renderer>().material = sphereMaterial;
+                    Color currentColor = sphereObj[i * gameObjDimY + j].GetComponent<Renderer>().material.color;
+                    currentColor.a = 130;
+                    sphereObj[i * gameObjDimY + j].GetComponent<Renderer>().material.color = currentColor;
                     //sphereObj[i].name = "Sphere" + i;
                     //sphereObj[i * gameObjDimY + j].transform.localScale.Set(2.5f, 2.5f ,2.5f);
                 }
@@ -981,7 +1037,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
 
         return new Vector3(radius, polar, elevation);
     }
-    Vector3[] GenerateCartesianSphereCoordinates(float r, int dpu) {
+    Vector3[]  GenerateCartesianSphereCoordinates(float r, int dpu, ref int size) {
         Debug.LogWarning("GenerateCartesianSphereCoordinates start | r: " + r + " dpu: " + dpu);
         float dpu_float = (float)dpu;
 
@@ -989,7 +1045,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         for (float i = -r; i <= r; i+=(r/dpu_float)) {
             for (float j = -r; j <= r; j+=(r/dpu_float)) {
                 for (float k = -r; k <= r; k+= (r/dpu_float)) {
-                    Debug.LogWarning("i: " + i + "j: " + j+ "k: " + k);
+                    // Debug.LogWarning("i: " + i + "j: " + j+ "k: " + k);
                     l.Add(new Vector3(i,j,k));
                 }   
             }
@@ -1002,7 +1058,9 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         }       
         Debug.LogWarning($"[{string.Join(",", l)}]");
         
-        return l.ToArray();
+        Vector3[] retArr = l.ToArray();
+        size = retArr.Length;
+        return retArr;
     }
     Vector3[] GenerateSphericalCoordinates(int thetaSubdivisions, int elevationSubdivisions, float radius, int radiusSubdivisions)
     {
@@ -1044,33 +1102,46 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         Debug.LogWarning($"[{string.Join(",", sphericalCoordinates)}]");
         return sphericalCoordinates;
     }
-    void setSpherePositions(Vector3[] coords)
+
+    // setSpherePositions uses the coords parameter to set the positions of the spheres in sphereObj
+    void setSpherePositions(Vector3[] coords, GameObject[] objArr)
     {
         Vector3 centerPosition = new Vector3(0, 0, 0);
-        spheresAllObj.transform.rotation = Quaternion.identity;
+        objArr[0].transform.rotation = Quaternion.identity;
 
 
         centerPosition = paintBoardCenterPosition;
         if (gamePlaymode == GamePlayMode.Left)
             centerPosition.x = -paintBoardCenterPosition.x;
 
-        spheresAllObj.transform.position = avatarShoulderCenterPos + new Vector3(0, 0.2f, 0.5f) + centerPosition;
+        // spheresAllObj.transform.position = avatarShoulderCenterPos + new Vector3(0, 0.2f, 0.5f) + centerPosition;
 
 
-        for (int i = 0; i < coords.Length; i++)
+        for (int i = 1; i < coords.Length; i++)
         {
         
             Vector3 spherePosition = coords[i];
-            sphereObj[i].transform.position = spheresAllObj.transform.position + spherePosition;
-            sphereObj[i].GetComponent<Renderer>().material.color = Color.white;
-            sphereObj[i].GetComponent<SphereData>().sphereCoords = spherePosition;
+            objArr[i].transform.position = objArr[0].transform.position + spherePosition;
+            objArr[i].GetComponent<Renderer>().material = sphereMaterial;
+                    //             Color currentColor = sphereObj[i].GetComponent<Renderer>().material.color;
+                    // currentColor.a = 130f;
+                    // sphereObj[i].GetComponent<Renderer>().material.color = currentColor;
+            objArr[i].GetComponent<SphereData>().sphereCoords = spherePosition;
         }
     }
 
-
+    private void handleSetSpherePositions() {
+        if (gamePlaymode == GamePlayMode.Left || gamePlaymode == GamePlayMode.Bilateral ) {
+            setSpherePosition(cartesianSphereCoords, leftSphereObjs); 
+        }
+        if (gamePlaymode == GamePlayMode.Right || gamePlaymode == GamePlayMode.Bilateral ) {
+            setSpherePosition(cartesianSphereCoords, rightSphereObjs); 
+        } 
+    }
 
     private void resetGame()
     {
+        Debug.LogWarning("resetgame start"); 
         //gameLevel = 3;
         //setGameLevel();
         gameRuningTime = 0;
@@ -1082,6 +1153,10 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         f_gameResult_progress = 0;
         f_gameResult_trajectory_distance_left = 0;
         f_gameResult_trajectory_distance_right = 0;
+        touched_sphere_coords_left.Clear();
+        touched_sphere_polar_coords_left.Clear();
+        touched_sphere_coords_right.Clear();
+        touched_sphere_polar_coords_right.Clear();
         //pre_hand_pos_left = avatarData.GetAvatarLeftHandPosition();
         //pre_hand_pos_right = avatarData.GetAvatarRightHandPosition();
         pre_hand_pos_left = hand_l.transform.position;
@@ -1089,8 +1164,40 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         shpereIndex = 0;
         flowerRotatedCnt = 0;
         flowerRotateIndex = 0;
-        setSpherePosition(sphereCoords);
-       rotateFlower();
+        Debug.LogWarning("resetgame start2"); 
+
+        
+        Debug.LogWarning("About to run generation in reset function");
+        // Kill children if deactivated
+        if (!leftArmSphereActive && leftOriginSphere.transform.childCount > 0) {
+            for(int i = leftOriginSphere.transform.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(leftOriginSphere.transform.GetChild(i).gameObject);
+                }
+
+        }
+        if (!rightArmSphereActive && rightOriginSphere.transform.childCount > 0) {
+            for(int i = rightOriginSphere.transform.childCount - 1; i >= 0; i--)
+                {
+                    Destroy(rightOriginSphere.transform.GetChild(i).gameObject);
+                }
+
+        }
+         if (leftArmSphereActive && leftOriginSphere.transform.childCount == 0) {
+           Debug.LogWarning("Generating left"); 
+        createSphereWall(ref leftSphereObjs, numCoordsInSphere, leftOriginSphere);
+        }
+
+        if (rightArmSphereActive && rightOriginSphere.transform.childCount == 0) {
+            Debug.LogWarning("Generating right"); 
+        createSphereWall(ref rightSphereObjs, numCoordsInSphere, rightOriginSphere);
+        // Set sphere position should apply coord vector to object vector
+        }
+        Debug.LogWarning("Just ran generation in reset function");
+
+        rotateFlower();
+        Debug.LogWarning("resetgame start3"); 
+
         txtGameFinished.text = "";
         //if(sphereObjMirror != null)
         //   Destroy(sphereObjMirror);
@@ -1100,6 +1207,13 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         //    i_gameResult_total_balls = max_gameObjNum * maxRotateIndex;
         if (DataOculus != null)
             DataOculus.StopRecordData();
+        
+
+        
+       
+
+        
+        
     }
     public void resetGames()
     {
@@ -1159,26 +1273,33 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         //setShpereScale();
         //if (sphereObjMirror != null)
         //    Destroy(sphereObjMirror);
-        setSpherePosition(sphereCoords);
+        handleSetSpherePositions();
         //if(gamePlaymode == GamePlayMode.Bilateral)
         //    mirror_obj();
     }
 
     public void setPlayModeLeft()
     {
+        // Debug.LogWarning("PLAYMODE LEFT");
         gamePlaymode = GamePlayMode.Left;
+        leftArmSphereActive = true;
+        rightArmSphereActive = false;
         resetGame();
         buttonClickSound();
     }
     public void setPlayModeRight()
     {
         gamePlaymode = GamePlayMode.Right;
+        leftArmSphereActive = false;
+        rightArmSphereActive = true;
         resetGame();
         buttonClickSound();
     }
     public void setPlayModeBilateral()
     {
         gamePlaymode = GamePlayMode.Bilateral;
+        leftArmSphereActive = true;
+        rightArmSphereActive = true;
         resetGame();
         //mirror_obj();
         buttonClickSound();
@@ -1205,9 +1326,12 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     }
     void initUIButtons()
     {
+        Debug.LogWarning("initUIButtons"); 
         GameObject gameGUIObj = GameObject.Find("TherapistGUI");
-        if (gameGUIObj == null)
+        if (gameGUIObj == null) {
+         Debug.LogWarning("Could not find GUI Object");
             return;
+        }
         GameObject gameGUIObj1 = getChildGameObject(gameGUIObj, "TherapistGUIPanel");
         //GameObject gameGUIObj1 = GameObject.Find("TherapistGUIPanel");
         if (gameGUIObj1 != null)
@@ -1215,12 +1339,15 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             GameObject gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Left");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(setPlayModeLeft);
+
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Right");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(setPlayModeRight);
+
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Bilateral");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(setPlayModeBilateral);
+
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Reset");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(resetGames);
@@ -1249,17 +1376,17 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
 public void moveDialPad_left_right(float value)
 {
         paintBoardCenterPosition.x = (value - 50.0f) / 100.0f + 0.3f;
-        setSpherePosition(sphereCoords);
+        handleSetSpherePositions();
 }
 public void moveDialPad_back_forth(float value)
 {
         paintBoardCenterPosition.z = (value - 50.0f) / 100.0f;
-    setSpherePosition(sphereCoords);
+    handleSetSpherePositions();
 }
 public void moveDialPad_up_down(float value)
 {
         paintBoardCenterPosition.y = (value - 50.0f) / 100.0f;
-    setSpherePosition(sphereCoords);
+    handleSetSpherePositions();
 }
     public void changeBoardSize_big_small(float value)
     {
@@ -1267,7 +1394,7 @@ public void moveDialPad_up_down(float value)
         if (boardSizeRatio < 0.1f) boardSizeRatio = 0.1f;
         else if (boardSizeRatio > 0.8f) boardSizeRatio = 0.8f;
         globalScale = boardSizeRatio;
-        setSpherePosition(sphereCoords);
+        handleSetSpherePositions();
 
     }
     void SaveDefaultLevelFile(int level)
@@ -1407,7 +1534,7 @@ public void ResetLevel()
 {
         globalScale = 0.35f;
         paintBoardCenterPosition = new Vector3(0.2f, -0.1f, 0);
-        setSpherePosition(sphereCoords);
+        handleSetSpherePositions();
         setGameLevel();
         resetGames();
 }
