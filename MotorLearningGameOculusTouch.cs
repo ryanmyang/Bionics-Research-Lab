@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.IO;
+using System;
 [RequireComponent(typeof(AudioSource))]
 public class MotorLearningGameOculusTouch : MonoBehaviour {
     string strGameName = "MotorLearning";
@@ -121,15 +122,38 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     private LineRenderer lineRendererLeft;
     private LineRenderer lineRendererRight;
 
+    [Serializable]
+    public class TimeVector3
+    {
+        public float time;
+        public Vector3 position;
+
+        public TimeVector3(float time, Vector3 vectorValue)
+        {
+            this.time = time;
+            this.position = vectorValue;
+        }
+    }
+    public List<TimeVector3> leftArmPosList = new List<TimeVector3>();
+    public List<TimeVector3> rightArmPosList = new List<TimeVector3>();
+    
+
+    public float pointPrecision;
+
     public enum PlaneType
     {
         XY,
         YZ,
         ZX
     }
+    public List<TrailRenderer> TrailRendererList = new List<TrailRenderer>();
+
+    
     
     void Start()
     {
+        TrailRenderer[] trailRenderers = FindObjectsOfType<TrailRenderer>();
+        TrailRendererList.AddRange(trailRenderers);
         leftGameOrigin = GameObject.Find("LeftGameOrigin");
         rightGameOrigin = GameObject.Find("RightGameOrigin");
 
@@ -145,11 +169,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         lineRendererRight.startWidth = 0.01f;
         lineRendererRight.endWidth = 0.01f;
 
-        if (leftGameOrigin == null) {
-            Debug.LogWarning("Leftgame origin is null!");
-        } else {
-            Debug.LogWarning(leftGameOrigin.transform.position);
-        }
+        
         deviceConfig = new DeviceConfig();
         deviceConfig.hardwareType = controllerHardwareType;
         if (deviceConfig.hardwareType == ControllerHardwareType.OculusTouch)
@@ -315,8 +335,24 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             }
         }
     }
+
+    void AddVectorToList(List<TimeVector3> vectorList, Vector3 newVector)
+    {
+        // Check if the list is empty or the newVector is sufficiently far from the last vector
+        if (vectorList.Count == 0 || Vector3.Distance(newVector, vectorList[vectorList.Count - 1].position) >= pointPrecision)
+        {
+            vectorList.Add(new TimeVector3(gameRuningTime, newVector));
+        }
+    }
     void Update()
     {
+        Debug.LogWarning("left hand pos: " + hand_l.transform.position);
+        if (gamePlaymode == GamePlayMode.Left || gamePlaymode == GamePlayMode.Bilateral) {
+            AddVectorToList(leftArmPosList, hand_l.transform.position);
+        }
+        if (gamePlaymode == GamePlayMode.Right || gamePlaymode == GamePlayMode.Bilateral) {
+            AddVectorToList(rightArmPosList, hand_r.transform.position);
+        }
         if (deviceConfig.hardwareType == ControllerHardwareType.OculusTouch)
         {
             //use oculus avatar position
@@ -327,30 +363,30 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             //else
             //    avatarShoulderCenterPos = body_JNT.transform.position + new Vector3(0, 0.48f, 0);
             //use oculus avatar position
-            if (body_JNT == null)
-            {
-                body_JNT = getChildGameObject(LocalAvatar, "body_JNT");
-                if (body_JNT != null)
-                {
-                    avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
-                    //rightShoulderPos = avatarShoulderCenterPos + avatarBallOffset;
-                    setPopBasePosition();
-                }
-                waitTime_initialize = fCurrentTime;
-            }
-            else
-            {
-                if (waitTime_initialize != -1)
-                {
-                    if (fCurrentTime - waitTime_initialize > 2.0f)
-                    {
-                        waitTime_initialize = -1;
-                        avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
-                        //rightShoulderPos = avatarShoulderCenterPos + avatarBallOffset;
-                        setPopBasePosition();
-                    }
-                }
-            }
+            // if (body_JNT == null)
+            // {
+            //     body_JNT = getChildGameObject(LocalAvatar, "body_JNT");
+            //     if (body_JNT != null)
+            //     {
+            //         avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
+            //         //rightShoulderPos = avatarShoulderCenterPos + avatarBallOffset;
+            //         setPopBasePosition();
+            //     }
+            //     waitTime_initialize = fCurrentTime;
+            // }
+            // else
+            // {
+            //     if (waitTime_initialize != -1)
+            //     {
+            //         if (fCurrentTime - waitTime_initialize > 2.0f)
+            //         {
+            //             waitTime_initialize = -1;
+            //             avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
+            //             //rightShoulderPos = avatarShoulderCenterPos + avatarBallOffset;
+            //             setPopBasePosition();
+            //         }
+            //     }
+            // }
             //avatarShoulderCenterPos = body_JNT.transform.position + avatarShoulder_body_JNT_Offset;
             //setPopBasePosition();
         }
@@ -377,7 +413,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             return;
         }
         // useMouserControl();
-        calculateTrajectoryDistance();
+        // calculateTrajectoryDistance();
+        
         
         // Hidden old popclap
         // #region
@@ -885,7 +922,25 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         SceneSwitch sceneSwitch = new SceneSwitch();
         sceneSwitch.CloseScene();
     }
+    
+    void ResetTrailRenderer(TrailRenderer trailRenderer)
+    {
+        // Disable the TrailRenderer
+        trailRenderer.enabled = false;
 
+        // Enable the TrailRenderer after a short delay
+        StartCoroutine(EnableTrailRendererAfterDelay(trailRenderer));
+    }
+
+    System.Collections.IEnumerator EnableTrailRendererAfterDelay(TrailRenderer trailRenderer)
+    {
+        // Wait for a short delay (adjust as needed)
+        yield return new WaitForSeconds(0.1f);
+
+        // Enable the TrailRenderer
+        trailRenderer.Clear(); // This clears the existing trail segments
+        trailRenderer.enabled = true;
+    }
     void resetGame()
     {
         //gameLevel = 0;
@@ -899,6 +954,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         f_gameResult_touched_percent = 0;
         f_gameResult_trajectory_distance_left = 0;
         f_gameResult_trajectory_distance_right = 0;
+        rightArmPosList.Clear();
+        leftArmPosList.Clear();
         //pre_hand_pos_left = avatarData.GetAvatarLeftHandPosition();
         //pre_hand_pos_right = avatarData.GetAvatarRightHandPosition();
         pre_hand_pos_left = hand_l.transform.position;
@@ -914,10 +971,14 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         lineRendererLeft.positionCount = 0;
         lineRendererRight.positionCount = 0;
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
-        DrawLines(lineRendererLeft, leftGameOrigin.transform.position, 0.5f, PlaneType.ZX);
+        DrawLines(lineRendererLeft, leftGameOrigin.transform.position, 0.5f, PlaneType.XY);
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
-        DrawLines(lineRendererRight, rightGameOrigin.transform.position, 0.5f, PlaneType.ZX);
+        DrawLines(lineRendererRight, rightGameOrigin.transform.position, 0.5f, PlaneType.XY);
+        }
+
+        foreach (TrailRenderer tr in TrailRendererList) {
+            ResetTrailRenderer(tr);
         }
         
     }
