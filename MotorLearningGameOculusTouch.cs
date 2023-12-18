@@ -21,6 +21,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public Camera sceneCamera;
     public bool bGameRunning = true;
     public bool bGamePause = false;
+
+    public Dropdown dropdownPlaneSelect;
     protected static FlowerGame instance = null;
     int gameLevel = 1;
     const int max_gameLevel = 5;
@@ -116,7 +118,6 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     private GameObject rightGameOrigin = null;
 
     public float radius = 5f;
-    public PlaneType planeType = PlaneType.XY;
     public Material lineMaterial;
 
     private LineRenderer lineRendererLeft;
@@ -148,10 +149,29 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
     public List<TrailRenderer> TrailRendererList = new List<TrailRenderer>();
 
+    public PlaneType selectedPlane = PlaneType.ZX;
+
+    public void OnDropdownValueChanged(int index) {
+        switch (index) {
+            case 0:
+                selectedPlane = PlaneType.ZX;
+                break;
+            case 1:
+                selectedPlane = PlaneType.XY;
+                break;
+            case 2:
+                selectedPlane = PlaneType.YZ;
+                break;
+        }
+        resetGame();
+    }
+
     
     
     void Start()
     {
+        dropdownPlaneSelect.onValueChanged.AddListener(OnDropdownValueChanged);
+
         TrailRenderer[] trailRenderers = FindObjectsOfType<TrailRenderer>();
         TrailRendererList.AddRange(trailRenderers);
         leftGameOrigin = GameObject.Find("LeftGameOrigin");
@@ -954,6 +974,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         f_gameResult_touched_percent = 0;
         f_gameResult_trajectory_distance_left = 0;
         f_gameResult_trajectory_distance_right = 0;
+        leftGameOrigin.transform.position = hand_l.transform.position;
+        rightGameOrigin.transform.position = hand_r.transform.position;
         rightArmPosList.Clear();
         leftArmPosList.Clear();
         //pre_hand_pos_left = avatarData.GetAvatarLeftHandPosition();
@@ -971,10 +993,10 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         lineRendererLeft.positionCount = 0;
         lineRendererRight.positionCount = 0;
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
-        DrawLines(lineRendererLeft, leftGameOrigin.transform.position, 0.5f, PlaneType.XY);
+        DrawLines(lineRendererLeft, leftGameOrigin.transform.position, 0.5f, selectedPlane);
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
-        DrawLines(lineRendererRight, rightGameOrigin.transform.position, 0.5f, PlaneType.XY);
+        DrawLines(lineRendererRight, rightGameOrigin.transform.position, 0.5f, selectedPlane);
         }
 
         foreach (TrailRenderer tr in TrailRendererList) {
