@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.IO;
 using System;
+using TMPro;
 [RequireComponent(typeof(AudioSource))]
 public class MotorLearningGameOculusTouch : MonoBehaviour {
     string strGameName = "MotorLearning";
@@ -117,7 +118,6 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     private GameObject leftGameOrigin = null;
     private GameObject rightGameOrigin = null;
 
-    public float radius = 5f;
     public Material lineMaterial;
 
     private LineRenderer lineRendererLeft;
@@ -140,6 +140,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     
 
     public float pointPrecision;
+    public float gameRadius;
 
     public enum PlaneType
     {
@@ -150,6 +151,9 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public List<TrailRenderer> TrailRendererList = new List<TrailRenderer>();
 
     public PlaneType selectedPlane = PlaneType.ZX;
+    public TextMeshPro stageNumberLabelPrefab;
+
+    Vector3[] targetLocations = new Vector3[8];
 
     public void OnDropdownValueChanged(int index) {
         switch (index) {
@@ -164,13 +168,13 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
                 break;
         }
         resetGame();
+        buttonClickSound();
     }
 
     
     
     void Start()
     {
-        dropdownPlaneSelect.onValueChanged.AddListener(OnDropdownValueChanged);
 
         TrailRenderer[] trailRenderers = FindObjectsOfType<TrailRenderer>();
         TrailRendererList.AddRange(trailRenderers);
@@ -275,16 +279,38 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         // OpenLevelFile(gameLevel);
     }
 
-    void DrawLines(LineRenderer lrr, Vector3 origin, float radius, PlaneType planeType)
+    // Draws target lines around origin
+    void DrawGame(LineRenderer lrr, GameObject originObject)
     {
+        Vector3 origin = originObject.transform.position;
+        Debug.LogWarning("Entered DrawGame");
+        DrawLine(lrr, origin + targetLocations[1], origin + targetLocations[5]);
+        DrawLine(lrr, origin + targetLocations[0], origin + targetLocations[4]);
+        DrawLine(lrr, origin + targetLocations[2], origin + targetLocations[6]);
+        DrawLine(lrr, origin + targetLocations[3], origin + targetLocations[7]);
+        for (int i = 0; i < targetLocations.Length; i++) {
+           TextMeshPro thisLabel = Instantiate(stageNumberLabelPrefab, originObject.transform);
+           thisLabel.transform.position = origin + targetLocations[i];
+           thisLabel.text = i.ToString();
+        }
 
-        Debug.LogWarning("Entered DrawLines");
-        DrawLine(lrr, origin - GetAxisVector(planeType, 1.0f, 1.0f) * radius, origin + GetAxisVector(planeType, 1.0f, 1.0f) * radius);
-        DrawLine(lrr, origin - GetAxisVector(planeType, 1.0f, -1.0f) * radius, origin + GetAxisVector(planeType, 1.0f, -1.0f) * radius);
-        DrawLine(lrr, origin + GetAxisVector(planeType, 0.0f, -1.0f) * radius, origin + GetAxisVector(planeType, 0.0f, 1.0f) * radius);
-        DrawLine(lrr, origin + GetAxisVector(planeType, -1.0f, 0.0f) * radius, origin + GetAxisVector(planeType, 1.0f, 0.0f) * radius);
     }
 
+
+    void setupTargetLocations()
+    {
+        targetLocations[1] = GetAxisVector(selectedPlane, 1.0f, 1.0f) * gameRadius;
+        targetLocations[5] = GetAxisVector(selectedPlane, -1.0f, -1.0f) * gameRadius;
+        targetLocations[3] = GetAxisVector(selectedPlane, 1.0f, -1.0f) * gameRadius;
+        targetLocations[7] = GetAxisVector(selectedPlane, -1.0f, 1.0f) * gameRadius;
+        targetLocations[0] = GetAxisVector(selectedPlane, 0.0f, 1.0f) * gameRadius;
+        targetLocations[4] = GetAxisVector(selectedPlane, 0.0f, -1.0f) * gameRadius;
+        targetLocations[2] = GetAxisVector(selectedPlane, 1.0f, 0.0f) * gameRadius;
+        targetLocations[6] = GetAxisVector(selectedPlane, -1.0f, 0.0f) * gameRadius;
+    }
+
+
+    // Draws line from start to end to middle
     void DrawLine(LineRenderer lineRenderer, Vector3 start, Vector3 end)
     {
         lineRenderer.positionCount += 3;
@@ -866,60 +892,60 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         }
         return null;
     }
-    void remove_mirror_obj()
-    {
+    // void remove_mirror_obj()
+    // {
    
-    }
-    void mirror_obj()
-    {
+    // }
+    // void mirror_obj()
+    // {
    
-    }
-    void rotateBallPosition()
-    {
-        //launchBall();
-        //return;
-        shpereIndex = 0;
-        Vector3 targetPos = Vector3.zero;
-        //Vector3 shoulderCenterPos = new Vector3(0, -0.55f, 0);//y -1.92=floor//-0.55=shoulder center
-        Vector3 shoulderCenterPos = avatarShoulderCenterPos;
-        Vector3 offsetPos = Vector3.zero;
-        float fRangeHorizonal =  0.6f * (float)(gameLevel + 1) / (float)max_gameLevel;
-        float fRangeFront = 0.6f * (float)(gameLevel + 1) / (float)max_gameLevel;
-        float offsetX = 0;
-        float offsetY = 0;
-        float offsetZ = 0;
+    // }
+    // void rotateBallPosition()
+    // {
+    //     //launchBall();
+    //     //return;
+    //     shpereIndex = 0;
+    //     Vector3 targetPos = Vector3.zero;
+    //     //Vector3 shoulderCenterPos = new Vector3(0, -0.55f, 0);//y -1.92=floor//-0.55=shoulder center
+    //     Vector3 shoulderCenterPos = avatarShoulderCenterPos;
+    //     Vector3 offsetPos = Vector3.zero;
+    //     float fRangeHorizonal =  0.6f * (float)(gameLevel + 1) / (float)max_gameLevel;
+    //     float fRangeFront = 0.6f * (float)(gameLevel + 1) / (float)max_gameLevel;
+    //     float offsetX = 0;
+    //     float offsetY = 0;
+    //     float offsetZ = 0;
      
-        fRangeHorizonal = 0.6f;
-        fRangeFront = 0.3f;
+    //     fRangeHorizonal = 0.6f;
+    //     fRangeFront = 0.3f;
 
-        appliedBallForce = 30.0f + (gameLevel / max_gameLevel) * 30;
-        if (gamePlaymode == GamePlayMode.Left)
-        {
-            offsetPos = new Vector3(offsetX, offsetY, offsetZ);
-            fRangeHorizonal = -fRangeHorizonal;
-        }
-        else if (gamePlaymode == GamePlayMode.Right || gamePlaymode == GamePlayMode.Bilateral)
-        {
-            offsetPos = new Vector3(-offsetX, offsetY, offsetZ);
-            fRangeHorizonal = fRangeHorizonal;
-        }
-        float x = 0;
-        float y = 0;
-        float z = 0;
+    //     appliedBallForce = 30.0f + (gameLevel / max_gameLevel) * 30;
+    //     if (gamePlaymode == GamePlayMode.Left)
+    //     {
+    //         offsetPos = new Vector3(offsetX, offsetY, offsetZ);
+    //         fRangeHorizonal = -fRangeHorizonal;
+    //     }
+    //     else if (gamePlaymode == GamePlayMode.Right || gamePlaymode == GamePlayMode.Bilateral)
+    //     {
+    //         offsetPos = new Vector3(-offsetX, offsetY, offsetZ);
+    //         fRangeHorizonal = fRangeHorizonal;
+    //     }
+    //     float x = 0;
+    //     float y = 0;
+    //     float z = 0;
        
-        x = avatarShoulderCenterPos.x;
-        y = avatarShoulderCenterPos.y;
-        z = avatarShoulderCenterPos.z;
+    //     x = avatarShoulderCenterPos.x;
+    //     y = avatarShoulderCenterPos.y;
+    //     z = avatarShoulderCenterPos.z;
        
-        CannonObj.transform.position = new Vector3(x, CannonObj.transform.position.y, z) + avartarBallBaseOffset + ballPositionAdjustment;
-        //if (gamePlaymode == GamePlayMode.Bilateral)
-        //{
-        //    if (CannonMirrorObj != null)
-        //        CannonMirrorObj.transform.LookAt(new Vector3(-targetPos.x, targetPos.y, targetPos.z), Vector3.up);
-        //}
-        //setPopBasePosition();
-        return;
-    }
+    //     CannonObj.transform.position = new Vector3(x, CannonObj.transform.position.y, z) + avartarBallBaseOffset + ballPositionAdjustment;
+    //     //if (gamePlaymode == GamePlayMode.Bilateral)
+    //     //{
+    //     //    if (CannonMirrorObj != null)
+    //     //        CannonMirrorObj.transform.LookAt(new Vector3(-targetPos.x, targetPos.y, targetPos.z), Vector3.up);
+    //     //}
+    //     //setPopBasePosition();
+    //     return;
+    // }
     void setPopBasePosition()
     {
         if (CannonObj != null)
@@ -965,6 +991,11 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     {
         //gameLevel = 0;
         //setGameLevel();
+        GameObject[] killOnReset = GameObject.FindGameObjectsWithTag("killOnReset");
+        foreach (GameObject killMe in killOnReset)
+        {
+            Destroy(killMe);
+        }
         gameRuningTime = 0;
         timeoutPlay = 0;
         fPreviousTime = Time.time;
@@ -985,18 +1016,19 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         shpereIndex = 0;
         cannonRotateIndex = 0;
         cannonRotatedCnt = 0;
-        rotateBallPosition();
+        // rotateBallPosition();
         txtGameFinished.text = "";
         if (DataOculus != null)
             DataOculus.StopRecordData();
         
         lineRendererLeft.positionCount = 0;
         lineRendererRight.positionCount = 0;
+        setupTargetLocations();
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
-        DrawLines(lineRendererLeft, leftGameOrigin.transform.position, 0.5f, selectedPlane);
+        DrawGame(lineRendererLeft, leftGameOrigin);
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
-        DrawLines(lineRendererRight, rightGameOrigin.transform.position, 0.5f, selectedPlane);
+        DrawGame(lineRendererRight, rightGameOrigin);
         }
 
         foreach (TrailRenderer tr in TrailRendererList) {
@@ -1026,7 +1058,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         if (gameLevel > max_gameLevel)
             gameLevel = max_gameLevel;
         OpenLevelFile(gameLevel);
-        setGameLevel();
+        // setGameLevel();
         buttonClickSound();
     }
     public void levelDown()
@@ -1035,21 +1067,21 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         if (gameLevel < 1)
             gameLevel = 1;
         OpenLevelFile(gameLevel);
-        setGameLevel();
+        // setGameLevel();
         buttonClickSound();
     }
-    public void setGameLevel()
-    {
-        rotateBallPosition();
-        bGameRunning = true;
-        resetGame();
-        buttonClickSound();
-    }
+    // public void setGameLevel()
+    // {
+    //     rotateBallPosition();
+    //     bGameRunning = true;
+    //     resetGame();
+    //     buttonClickSound();
+    // }
 
     public void setPlayModeLeft()
     {
         gamePlaymode = GamePlayMode.Left;
-        remove_mirror_obj();
+        // remove_mirror_obj();
         resetGame();
         setCameraView();
         buttonClickSound();
@@ -1057,7 +1089,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public void setPlayModeRight()
     {
         gamePlaymode = GamePlayMode.Right;
-        remove_mirror_obj();
+        // remove_mirror_obj();
         setCameraView();
         resetGame();
         buttonClickSound();
@@ -1066,7 +1098,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     {
         gamePlaymode = GamePlayMode.Bilateral;
         setCameraView();
-        mirror_obj();
+        // mirror_obj();
         resetGame();
         buttonClickSound();
     }
@@ -1102,22 +1134,22 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
                 break;
         }
     }
-    public void branchUp()
-    {
-        cannonRotateIndex++;
-        if (cannonRotateIndex >= maxRotateIndex)
-            cannonRotateIndex = 0;
-        rotateBallPosition();
-        buttonClickSound();
-    }
-    public void branchDown()
-    {
-        cannonRotateIndex--;
-        if (cannonRotateIndex < 0)
-            cannonRotateIndex = maxRotateIndex;
-        rotateBallPosition();
-        buttonClickSound();
-    }
+    // public void branchUp()
+    // {
+    //     cannonRotateIndex++;
+    //     if (cannonRotateIndex >= maxRotateIndex)
+    //         cannonRotateIndex = 0;
+    //     rotateBallPosition();
+    //     buttonClickSound();
+    // }
+    // public void branchDown()
+    // {
+    //     cannonRotateIndex--;
+    //     if (cannonRotateIndex < 0)
+    //         cannonRotateIndex = maxRotateIndex;
+    //     rotateBallPosition();
+    //     buttonClickSound();
+    // }
     void buttonClickSound()
     {
         audioSource.PlayOneShot(audioclipButtonClick, 0.7F); 
@@ -1136,6 +1168,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
     void initUIButtons()
     {
+        dropdownPlaneSelect.onValueChanged.AddListener(OnDropdownValueChanged);
         GameObject gameGUIObj = GameObject.Find("TherapistGUI");
         if (gameGUIObj == null)
             return;
@@ -1165,11 +1198,11 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(Quit);
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchUp");
-            if (gameButtonObj != null)
-                gameButtonObj.GetComponent<Button>().onClick.AddListener(branchUp);
-            gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchDown");
-            if (gameButtonObj != null)
-                gameButtonObj.GetComponent<Button>().onClick.AddListener(branchDown);
+            // if (gameButtonObj != null)
+                // gameButtonObj.GetComponent<Button>().onClick.AddListener(branchUp);
+            // gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchDown");
+            // if (gameButtonObj != null)
+                // gameButtonObj.GetComponent<Button>().onClick.AddListener(branchDown);
 
         }
     }
