@@ -22,6 +22,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public Camera sceneCamera;
     public bool bGameRunning =true;
     public bool bGamePause = false;
+    public CameraViewControl cameraViewControl;
 
     public Dropdown dropdownPlaneSelect;
     protected static FlowerGame instance = null;
@@ -127,7 +128,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     private LineRenderer lineRendererTargetLeft;
     
     
-    public int currentStage = 0;
+    private int currentStage = 1;
 
     public List<TimeInt> stageTimes = new List<TimeInt>();
     
@@ -174,30 +175,64 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public List<TrailRenderer> TrailRendererList = new List<TrailRenderer>();
 
     public PlaneType selectedPlane = PlaneType.ZX;
-    public TextMeshPro stageNumberLabelPrefab;
+    public GameObject stageNumberLabelPrefab;
 
     Vector3[] targetLocations = new Vector3[8];
 
+    Vector3[] targetLocationsXY = new Vector3[8];
+    
+
     public void OnDropdownValueChanged(int index) {
+        resetGame();
+        buttonClickSound();
+    }
+
+    public void updatePlane(int index) {
+        RectTransform rightRectTransform = rightGameOrigin.transform.Find("OriginCanvas").GetComponent<RectTransform>();
+        RectTransform leftRectTransform = leftGameOrigin.transform.Find("OriginCanvas").GetComponent<RectTransform>();
+
+
         switch (index) {
             case 0:
                 selectedPlane = PlaneType.ZX;
+                rightRectTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                leftRectTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 break;
             case 1:
                 selectedPlane = PlaneType.XY;
+                rightRectTransform.rotation = Quaternion.Euler(0f, 0f, 0f);
+                leftRectTransform.rotation = Quaternion.Euler(0f, 0f, 0f);
                 break;
             case 2:
                 selectedPlane = PlaneType.YZ;
+                rightRectTransform.rotation = Quaternion.Euler(0f, 90f, 0f);
+                leftRectTransform.rotation = Quaternion.Euler(0f, -90f, 0f);
                 break;
         }
-        resetGame();
-        buttonClickSound();
+
     }
 
     
     
     void Start()
     {
+
+        // cameraViewControl = gameObject.GetComponent<CameraViewControl>();
+        Vector3[] targetLocations = new Vector3[8];
+
+
+    targetLocationsXY[0] = new Vector3(0f,1f,0f);
+    targetLocationsXY[1] = new Vector3(1f,1f,0f);
+    targetLocationsXY[2] = new Vector3(1f,0f,0f);
+    targetLocationsXY[3] = new Vector3(1f,-1f,0f);
+    targetLocationsXY[4] = new Vector3(0f,-1f,0f);
+    targetLocationsXY[5] = new Vector3(-1f,-1f,0f);
+    targetLocationsXY[6] = new Vector3(-1f,0f,0f);
+    targetLocationsXY[7] = new Vector3(-1f,1f,0f);
+    for (int i = 0; i < targetLocationsXY.Length; i++) {
+        // Normalize the vector and then scale it to the desired radius
+        targetLocationsXY[i] = targetLocationsXY[i].normalized * gameRadius;
+    }
 
         TrailRenderer[] trailRenderers = FindObjectsOfType<TrailRenderer>();
         TrailRendererList.AddRange(trailRenderers);
@@ -324,28 +359,36 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         DrawLine(lrr, origin + targetLocations[0], origin + targetLocations[4]);
         DrawLine(lrr, origin + targetLocations[2], origin + targetLocations[6]);
         DrawLine(lrr, origin + targetLocations[3], origin + targetLocations[7]);
-        for (int i = 0; i < targetLocations.Length; i++) {
-           TextMeshPro thisLabel = Instantiate(stageNumberLabelPrefab, originObject.transform);
-           thisLabel.transform.position = origin + targetLocations[i];
-           thisLabel.text = i.ToString();
-           thisLabel.name = i.ToString()+"_Label";
+
+        // Initialize text
+        Transform thisCanvas = originObject.transform.Find("OriginCanvas");
+        for (int i = 0; i < targetLocationsXY.Length; i++) {
+           GameObject thisLabel = Instantiate(stageNumberLabelPrefab, thisCanvas);
+            TextMeshProUGUI thisLabelTMP = thisLabel.GetComponent<TextMeshProUGUI>();
+            // Debug.LogWarning(targetLocationsXY[i].ToString());
+           thisLabel.transform.localPosition = targetLocationsXY[i];
+           thisLabelTMP.text = (i+1).ToString();
+           thisLabel.name = (i+1).ToString()+"_Label";
         }
+        // OnDropdownValueChanged(dropdownPlaneSelect.value);
 
     }
 
 
     void setupTargetLocations()
     {
-        targetLocations[1] = GetAxisVector(selectedPlane, 1.0f, 1.0f) * gameRadius;
-        targetLocations[5] = GetAxisVector(selectedPlane, -1.0f, -1.0f) * gameRadius;
-        targetLocations[3] = GetAxisVector(selectedPlane, 1.0f, -1.0f) * gameRadius;
-        targetLocations[7] = GetAxisVector(selectedPlane, -1.0f, 1.0f) * gameRadius;
-        targetLocations[0] = GetAxisVector(selectedPlane, 0.0f, 1.0f) * gameRadius;
-        targetLocations[4] = GetAxisVector(selectedPlane, 0.0f, -1.0f) * gameRadius;
-        targetLocations[2] = GetAxisVector(selectedPlane, 1.0f, 0.0f) * gameRadius;
-        targetLocations[6] = GetAxisVector(selectedPlane, -1.0f, 0.0f) * gameRadius;
+        targetLocations[1] = GetAxisVector(selectedPlane, 1.0f, 1.0f).normalized * gameRadius;
+        targetLocations[5] = GetAxisVector(selectedPlane, -1.0f, -1.0f).normalized * gameRadius;
+        targetLocations[3] = GetAxisVector(selectedPlane, 1.0f, -1.0f).normalized * gameRadius;
+        targetLocations[7] = GetAxisVector(selectedPlane, -1.0f, 1.0f).normalized * gameRadius;
+        targetLocations[0] = GetAxisVector(selectedPlane, 0.0f, 1.0f).normalized * gameRadius;
+        targetLocations[4] = GetAxisVector(selectedPlane, 0.0f, -1.0f).normalized * gameRadius;
+        targetLocations[2] = GetAxisVector(selectedPlane, 1.0f, 0.0f).normalized * gameRadius;
+        targetLocations[6] = GetAxisVector(selectedPlane, -1.0f, 0.0f).normalized * gameRadius;
     }
 
+
+    
 
     // Draws line from start to end to middle
     void DrawLine(LineRenderer lineRenderer, Vector3 start, Vector3 end)
@@ -370,6 +413,37 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             default:
                 return Vector3.zero;
         }
+    }
+
+    public void getArmAndPlane(out int arm, out int plane) {
+        arm = -1;
+        plane = -1;
+        switch(gamePlaymode)
+        {
+            case GamePlayMode.Left:
+                arm = 0;
+                break;
+            case GamePlayMode.Right:
+                arm = 1;
+                break;
+            case GamePlayMode.Bilateral:
+                arm = 2;
+                break;
+        }
+
+        switch (selectedPlane)
+        {
+            case PlaneType.XY:
+                plane = 0;
+                break;
+            case PlaneType.YZ:
+                plane = 1;
+                break;
+            case PlaneType.ZX:
+                plane = 2;
+                break;
+        }
+
     }
 
     void MotionDataCollection()
@@ -1061,7 +1135,10 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         
         lineRendererLeft.positionCount = 0;
         lineRendererRight.positionCount = 0;
+                updatePlane(dropdownPlaneSelect.value);
+
         setupTargetLocations();
+
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
         DrawGame(lineRendererLeft, leftGameOrigin);
         }
@@ -1073,7 +1150,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             ResetTrailRenderer(tr);
         }
         updateStageIndication();
-        
+
+        cameraViewControl.updateCameraView();
     }
     public void resetGames()
     {
@@ -1094,8 +1172,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public void levelUp()
     {
         currentStage++;
-        if (currentStage > 7) {
-            currentStage = 0;
+        if (currentStage > 8) {
+            currentStage = 1;
         }
 
         if (stageTimes.Count > 0 && stageTimes[stageTimes.Count-1].time == gameRuningTime) {
@@ -1113,8 +1191,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
 
     public void updateStageIndication() {
-        foreach (Transform child in leftGameOrigin.transform) {
-            TextMeshPro textMeshPro = child.GetComponent<TextMeshPro>();
+        foreach (Transform child in leftGameOrigin.transform.Find("OriginCanvas")) {
+            TextMeshProUGUI textMeshPro = child.GetComponent<TextMeshProUGUI>();
 
             if (textMeshPro != null) {
                 textMeshPro.color = Color.white;
@@ -1123,8 +1201,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
                 textMeshPro.color = Color.cyan;
             }
         }
-        foreach (Transform child in rightGameOrigin.transform) {
-            TextMeshPro textMeshPro = child.GetComponent<TextMeshPro>();
+        foreach (Transform child in rightGameOrigin.transform.Find("OriginCanvas")) {
+            TextMeshProUGUI textMeshPro = child.GetComponent<TextMeshProUGUI>();
 
             if (textMeshPro != null) {
                 textMeshPro.color = Color.white;
@@ -1142,12 +1220,13 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
             lineRendererTargetLeft.positionCount = 2;
             lineRendererTargetLeft.SetPosition(0, leftGameOrigin.transform.position);
-            lineRendererTargetLeft.SetPosition(1, leftGameOrigin.transform.position + targetLocations[currentStage]);
+            lineRendererTargetLeft.SetPosition(1, leftGameOrigin.transform.position + targetLocations[currentStage-1]);
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
             lineRendererTargetRight.positionCount = 2;
             lineRendererTargetRight.SetPosition(0, rightGameOrigin.transform.position);
-            lineRendererTargetRight.SetPosition(1, rightGameOrigin.transform.position + targetLocations[currentStage]);
+            Debug.LogWarning("currentStage: " + currentStage.ToString());
+            lineRendererTargetRight.SetPosition(1, rightGameOrigin.transform.position + targetLocations[currentStage-1]);
         }
 
         
