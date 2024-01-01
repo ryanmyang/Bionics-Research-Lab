@@ -170,11 +170,11 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     {
         XY,
         YZ,
-        ZX
+        XZ
     }
     public List<TrailRenderer> TrailRendererList = new List<TrailRenderer>();
 
-    public PlaneType selectedPlane = PlaneType.ZX;
+    public PlaneType selectedPlane = PlaneType.XZ;
     public GameObject stageNumberLabelPrefab;
 
     Vector3[] targetLocations = new Vector3[8];
@@ -187,6 +187,12 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         buttonClickSound();
     }
 
+    public void OnDropdownStageSelectChanged(int index) {
+        index++;
+        changeStage(index);
+        
+    }
+
     public void updatePlane(int index) {
         RectTransform rightRectTransform = rightGameOrigin.transform.Find("OriginCanvas").GetComponent<RectTransform>();
         RectTransform leftRectTransform = leftGameOrigin.transform.Find("OriginCanvas").GetComponent<RectTransform>();
@@ -194,7 +200,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
 
         switch (index) {
             case 0:
-                selectedPlane = PlaneType.ZX;
+                selectedPlane = PlaneType.XZ;
                 rightRectTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 leftRectTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 break;
@@ -408,8 +414,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
                 return new Vector3(x, y, 0);
             case PlaneType.YZ:
                 return new Vector3(0, x, y);
-            case PlaneType.ZX:
-                return new Vector3(y, 0, x);
+            case PlaneType.XZ:
+                return new Vector3(x, 0, y);
             default:
                 return Vector3.zero;
         }
@@ -439,7 +445,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             case PlaneType.YZ:
                 plane = 1;
                 break;
-            case PlaneType.ZX:
+            case PlaneType.XZ:
                 plane = 2;
                 break;
         }
@@ -1169,18 +1175,29 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
        resetGame();
         buttonClickSound();
     }
-    public void levelUp()
+
+    public void levelUp() {
+        changeStage();
+    }
+    public void changeStage(int manualChange = -1)
     {
-        currentStage++;
+        if (manualChange >= 1 && manualChange <= 8) {
+            currentStage = manualChange;
+        }
+        else {
+            currentStage++;
+        }
+
         if (currentStage > 8) {
             currentStage = 1;
         }
 
         if (stageTimes.Count > 0 && stageTimes[stageTimes.Count-1].time == gameRuningTime) {
            stageTimes[stageTimes.Count-1].num = currentStage; 
-        }
+        } 
+        else {
             stageTimes.Add(new TimeInt(gameRuningTime, currentStage));
-        
+       }
         // gameLevel++;
         // if (gameLevel > max_gameLevel)
         //     gameLevel = max_gameLevel;
@@ -1189,6 +1206,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         updateStageIndication();
         buttonClickSound();
     }
+
 
     public void updateStageIndication() {
         foreach (Transform child in leftGameOrigin.transform.Find("OriginCanvas")) {
@@ -1221,6 +1239,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             lineRendererTargetLeft.positionCount = 2;
             lineRendererTargetLeft.SetPosition(0, leftGameOrigin.transform.position);
             lineRendererTargetLeft.SetPosition(1, leftGameOrigin.transform.position + targetLocations[currentStage-1]);
+            Debug.LogWarning("Left target to " + targetLocations[currentStage-1].ToString());
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
             lineRendererTargetRight.positionCount = 2;
@@ -1367,7 +1386,10 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Exit");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(Quit);
-            gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchUp");
+            gameButtonObj = getChildGameObject(gameGUIObj1, "Dropdown_StageSelect");
+            if (gameButtonObj != null)
+                gameButtonObj.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
+            // gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchUp");
             // if (gameButtonObj != null)
                 // gameButtonObj.GetComponent<Button>().onClick.AddListener(branchUp);
             // gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchDown");
