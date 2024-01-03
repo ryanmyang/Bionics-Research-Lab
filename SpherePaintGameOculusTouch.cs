@@ -125,6 +125,11 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     GameObject leftOriginSphere = null;
     GameObject rightOriginSphere = null;
 
+    public float generation_radius = 0.8f;
+    public int divisions_per_rad = 6;
+
+    // private bool paintingModeOn = false;
+
 
     public bool ExportBoolean
     {
@@ -260,11 +265,12 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         // i_gameResult_total_balls = max_gameObjNum * maxRotateIndex;
         // Array.Resize( ref sphereCoords, max_gameObjNum );
         // sphereCoords = GenerateSphericalCoordinates(thetaSub, elevSub, rad, radSub);
+        leftOriginSphere = GameObject.Find("SphereLeftOrigin");
+        rightOriginSphere = GameObject.Find("SphereRightOrigin");
+        
+        
 
-        const float generation_radius = 0.8f;
-        const int divisions_per_rad = 6;
-
-        const float generation_side_length = generation_radius * 2;
+        float generation_side_length = generation_radius * 2;
         max_gameObjNum = (1+ divisions_per_rad*2 ) * (1+ divisions_per_rad*2) * (1+ divisions_per_rad*2);
         // Array.Resize( ref sphereCoords, max_gameObjNum ); //going to use new vector3 array instead
         Debug.LogWarning("Before cartesianspherecoords");
@@ -359,8 +365,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     }
     void Awake()
     {
-        leftOriginSphere = GameObject.Find("SphereLeft");
-        rightOriginSphere = GameObject.Find("SphereRight");
+        
 
     }
     void mirror_obj()
@@ -691,6 +696,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                                 if(obj.name == right_touch_ObjName)
                                 {
                                     obj.GetComponent<Renderer>().material.color = Color.red;
+                                    obj.SetActive(false);
                                 }
                             }
                             //other.GetComponent<Renderer>().material.color = Color.red;
@@ -739,6 +745,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
                     
                     calculateResult();
                     other.GetComponent<Renderer>().material.color = Color.red;
+                    other.gameObject.SetActive(false);
                     //other.name = "touched";
                     shpereIndex++;
                     if (shpereIndex == max_gameObjNum)
@@ -1169,26 +1176,20 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         
         Debug.LogWarning("About to run generation in reset function");
         // Kill children if deactivated
-        if (!leftArmSphereActive && leftOriginSphere.transform.childCount > 0) {
             for(int i = leftOriginSphere.transform.childCount - 1; i >= 0; i--)
                 {
                     Destroy(leftOriginSphere.transform.GetChild(i).gameObject);
                 }
-
-        }
-        if (!rightArmSphereActive && rightOriginSphere.transform.childCount > 0) {
             for(int i = rightOriginSphere.transform.childCount - 1; i >= 0; i--)
                 {
                     Destroy(rightOriginSphere.transform.GetChild(i).gameObject);
                 }
-
-        }
-         if (leftArmSphereActive && leftOriginSphere.transform.childCount == 0) {
+         if (leftArmSphereActive ) {
            Debug.LogWarning("Generating left"); 
         createSphereWall(ref leftSphereObjs, numCoordsInSphere, leftOriginSphere);
         }
 
-        if (rightArmSphereActive && rightOriginSphere.transform.childCount == 0) {
+        if (rightArmSphereActive ) {
             Debug.LogWarning("Generating right"); 
         createSphereWall(ref rightSphereObjs, numCoordsInSphere, rightOriginSphere);
         // Set sphere position should apply coord vector to object vector
@@ -1366,8 +1367,55 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchDown");
             if (gameButtonObj != null)
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(branchDown);
-
+            gameButtonObj = getChildGameObject(gameGUIObj1, "Dropdown_ViewSelect");
+            if (gameButtonObj != null)
+                gameButtonObj.GetComponent<Dropdown>().onValueChanged.AddListener(OnViewSelectChanged);
+            // gameButtonObj = getChildGameObject(gameGUIObj1, "Button_PaintMode");
+            // if (gameButtonObj != null)
+            //     gameButtonObj.GetComponent<Button>().onClick.AddListener(swapPaintMode);
         }
+    }
+
+    // private void swapPaintMode() {
+    //     paintingModeOn = !paintingModeOn;
+    // }
+
+    public void OnViewSelectChanged(int index) {
+        setCameraView(index);
+    }
+
+    public void setCameraView(int index) {
+        Vector3 posCamera = new Vector3(.0f, 1.72f, -1.436f);
+        Vector3 rotCamera = new Vector3(10.0f, 0.0f, 0.0f); ;
+        Vector3 avatarPos = new Vector3(0, 0, 0);
+        avatarPos = transform.position;
+
+        switch(index)
+        {
+            case 0:
+                posCamera = new Vector3(0.0f, 1.72f, -2f);
+                rotCamera = new Vector3(10.0f, 0.0f, 0.0f);
+                break;
+            case 1:
+              posCamera = new Vector3(2.0f, 1.5f, 0.0f);
+                rotCamera = new Vector3(10.0f, -90.0f, 0.0f);
+                break;
+            case 2:
+                posCamera = new Vector3(-2.0f, 1.5f, 0.0f);
+                rotCamera = new Vector3(10.0f, 90.0f, 0.0f);
+                break;
+            case 3:
+                posCamera = new Vector3(0.0f, 3.5f, 0.0f);
+                rotCamera = new Vector3(80.0f, 0.0f, 0.0f);
+                break;
+            case 4:
+                posCamera = new Vector3(0.0f, 1.72f, 2f);
+                rotCamera = new Vector3(10.0f, 180.0f, 0.0f);
+                break;
+        }
+        // Debug.LogWarning("Setting Position to: " + (avatarPos + posCamera).ToString());
+        sceneCamera.transform.position = avatarPos + posCamera;
+        sceneCamera.transform.eulerAngles = rotCamera;
     }
 
 
