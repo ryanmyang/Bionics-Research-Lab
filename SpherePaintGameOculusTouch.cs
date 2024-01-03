@@ -14,7 +14,7 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
     string strGameName = "SpherePaint";
     DeviceConfig deviceConfig;
     public ControllerHardwareType controllerHardwareType;
-    private GameObject hand_l, hand_r, body_JNT, LocalAvatar;
+    private GameObject hand_l, hand_r, body_JNT, shoulder_l, shoulder_r, LocalAvatar;
     public AudioClip audioclipTouchSphere;
     public AudioClip audioclipGameWin;
     public AudioClip audioclipGameFinished;
@@ -247,6 +247,8 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
             //
             hand_l = GameObject.Find("hand_l");
             hand_r = GameObject.Find("hand_r");
+            shoulder_l = GameObject.Find("upperarm_l");
+            shoulder_r = GameObject.Find("upperarm_r");
 
         }
         //LocalAvatar = GameObject.Find("LocalAvatar");
@@ -1172,6 +1174,8 @@ public class SpherePaintGameOculusTouch : MonoBehaviour {
         flowerRotatedCnt = 0;
         flowerRotateIndex = 0;
         Debug.LogWarning("resetgame start2"); 
+        leftOriginSphere.transform.position = shoulder_l.transform.position;
+        rightOriginSphere.transform.position = shoulder_r.transform.position;
 
         
         Debug.LogWarning("About to run generation in reset function");
