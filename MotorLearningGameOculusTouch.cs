@@ -36,12 +36,14 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     int shpereIndex = 0;
     int cannonRotateIndex = 0;//different rotation stages
     int cannonRotatedCnt = 0;//how many times rotated? if> max then end of game
-    const int maxRotateIndex = 10;
+    const int maxRotateIndex = 8;
     //float sphereScale = 1.0f;
     const int max_gameObjNum = 1;
     GameMenuControl game_MenuControl;
     bool b_rotateCannon = false;
     int i_delay_cnt = 0;
+
+    Color cyan2 = new Color(Color.cyan.r * 0.95f, Color.cyan.g * 0.95f, Color.cyan.b * 0.95f);
     //public ParticleSystem particle;
 
     //private float fStartTime = 0f;
@@ -128,8 +130,18 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     private LineRenderer lineRendererTargetLeft;
     
     private GameObject dropdownViewSelect;
+    private GameObject dropdownStageSelect;
+    private GameObject dropdownStageSelect2;
+
+    private GameObject buttonSpeed;
+    private GameObject buttonSpeed2;
     
     private int currentStage = 1;
+    private bool speedIsFast = false;
+
+    bool b_is_recording = false;
+    string filePath = "MotorLearningData";
+    string folderPath = "MotorLearningData";
 
     public List<TimeInt> stageTimes = new List<TimeInt>();
     
@@ -189,9 +201,19 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
 
     public void OnDropdownStageSelectChanged(int index) {
+        
         index++;
         changeStage(index);
+
         
+    }
+
+    public void changeSpeed() {
+        speedIsFast = !speedIsFast;
+        string displayText = speedIsFast ? "Fast" : "Normal";
+        buttonSpeed.transform.Find("Text").GetComponent<Text>().text = displayText;
+        buttonSpeed2.transform.Find("Text").GetComponent<Text>().text = displayText;
+
     }
 
     public void updatePlane(int index) {
@@ -228,18 +250,18 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         Vector3[] targetLocations = new Vector3[8];
 
 
-    targetLocationsXY[0] = new Vector3(0f,1f,0f);
-    targetLocationsXY[1] = new Vector3(1f,1f,0f);
-    targetLocationsXY[2] = new Vector3(1f,0f,0f);
-    targetLocationsXY[3] = new Vector3(1f,-1f,0f);
-    targetLocationsXY[4] = new Vector3(0f,-1f,0f);
-    targetLocationsXY[5] = new Vector3(-1f,-1f,0f);
-    targetLocationsXY[6] = new Vector3(-1f,0f,0f);
-    targetLocationsXY[7] = new Vector3(-1f,1f,0f);
-    for (int i = 0; i < targetLocationsXY.Length; i++) {
-        // Normalize the vector and then scale it to the desired radius
-        targetLocationsXY[i] = targetLocationsXY[i].normalized * gameRadius;
-    }
+        targetLocationsXY[0] = new Vector3(0f,1f,0f);
+        targetLocationsXY[1] = new Vector3(1f,1f,0f);
+        targetLocationsXY[2] = new Vector3(1f,0f,0f);
+        targetLocationsXY[3] = new Vector3(1f,-1f,0f);
+        targetLocationsXY[4] = new Vector3(0f,-1f,0f);
+        targetLocationsXY[5] = new Vector3(-1f,-1f,0f);
+        targetLocationsXY[6] = new Vector3(-1f,0f,0f);
+        targetLocationsXY[7] = new Vector3(-1f,1f,0f);
+        for (int i = 0; i < targetLocationsXY.Length; i++) {
+            // Normalize the vector and then scale it to the desired radius
+            targetLocationsXY[i] = targetLocationsXY[i].normalized * gameRadius;
+        }
 
         TrailRenderer[] trailRenderers = FindObjectsOfType<TrailRenderer>();
         TrailRendererList.AddRange(trailRenderers);
@@ -258,17 +280,19 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         lineRendererRight.startWidth = 0.005f;
         lineRendererRight.endWidth = 0.005f;
 
+
+
         lineRendererTargetLeft = leftGameOrigin.transform.Find("TargetRendererLeft").gameObject.AddComponent<LineRenderer>();
         lineRendererTargetLeft.material = targetLineMaterial;
         lineRendererTargetLeft.positionCount = 2;
-        lineRendererTargetLeft.startWidth = 0.03f;
-        lineRendererTargetLeft.endWidth = 0.03f;
+        lineRendererTargetLeft.startWidth = 0.01f;
+        lineRendererTargetLeft.endWidth = 0.01f;
 
         lineRendererTargetRight = rightGameOrigin.transform.Find("TargetRendererRight").gameObject.AddComponent<LineRenderer>();
         lineRendererTargetRight.material = targetLineMaterial;
         lineRendererTargetRight.positionCount = 2;
-        lineRendererTargetRight.startWidth = 0.03f;
-        lineRendererTargetRight.endWidth = 0.03f;
+        lineRendererTargetRight.startWidth = 0.01f;
+        lineRendererTargetRight.endWidth = 0.01f;
 
         
         
@@ -351,6 +375,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         gameResultLog.StartGameResultFile();
         //ui
         initUIButtons();
+        
         //data
         if (deviceConfig.hardwareType == ControllerHardwareType.OculusTouch)
         {
@@ -395,6 +420,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public void exportData() {
         
     }
+
+    
 
 
     void setupTargetLocations()
@@ -468,6 +495,58 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
 
     }
 
+
+    string GetTimeDate()
+    {
+        string dateTime = System.DateTime.Now.ToString("MM_dd_yyyy_HH_mm_ss");
+        return dateTime;
+    }
+    public void startRecordMotorLearning()
+    {
+        if (b_is_recording == false)
+        {
+            b_is_recording = true;
+            filePath = "MotorLearning" + "_" + GetTimeDate() + ".txt";
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            filePath = Path.Combine(folderPath,filePath);
+        }
+    }
+    public void stopRecordMotorLearning()
+    {
+        if(b_is_recording == true)
+            b_is_recording = false;
+    }
+    void writeFileMotorLearningData(Vector3 newVector)
+    {
+        Debug.LogWarning("Entered writeFileMotorLearningData");
+        using (StreamWriter fileWriter = File.AppendText(filePath))
+        {
+            // using (fileWriter = File.AppendText(filePath))
+            if (fileWriter != null)
+            {
+                
+                string dataString = gameRuningTime.ToString("N5");
+                dataString += ",";
+                dataString += currentStage.ToString();
+                dataString += ",";
+                for (int i = 0; i < 3; i++)
+                {
+                    dataString += newVector[i].ToString("N5");
+                    dataString += ",";
+                }
+                
+                fileWriter.WriteLine(dataString);
+                fileWriter.Flush();
+            } else {
+                Debug.LogWarning("fileWriter is null");
+            }
+        }
+
+    }
+
     void MotionDataCollection()
     {
         if (b_enableMotionDataCollection == false)
@@ -523,14 +602,19 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             vectorList.Add(new TimeVector3(gameRuningTime, newVector));
         }
     }
+
+
     void Update()
     {
         // Debug.LogWarning("left hand pos: " + hand_l.transform.position);
-        if (gamePlaymode == GamePlayMode.Left || gamePlaymode == GamePlayMode.Bilateral) {
+        if (gamePlaymode == GamePlayMode.Left && b_is_recording && !bGamePause/*|| gamePlaymode == GamePlayMode.Bilateral*/) {
             AddVectorToList(leftArmPosList, hand_l.transform.position);
+            writeFileMotorLearningData(hand_l.transform.position);
         }
-        if (gamePlaymode == GamePlayMode.Right || gamePlaymode == GamePlayMode.Bilateral) {
+        if (gamePlaymode == GamePlayMode.Right && b_is_recording && !bGamePause /*|| gamePlaymode == GamePlayMode.Bilateral*/) {
             AddVectorToList(rightArmPosList, hand_r.transform.position);
+            writeFileMotorLearningData(hand_r.transform.position);
+
         }
         if (deviceConfig.hardwareType == ControllerHardwareType.OculusTouch)
         {
@@ -591,6 +675,15 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
             }
             return;
         }
+
+
+        // for (int i = 1; i <= 8; i++)
+        // {
+        //     if (Input.GetButtonDown("Number" + i))
+        //     {
+        //         Debug.LogWarning(i);
+        //     }
+        // }
         // useMouserControl();
         // calculateTrajectoryDistance();
         
@@ -650,6 +743,12 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         // #endregion
         stopExplosionEffect();
 
+        
+        // if (Input.GetKey(KeyCode.Alpha1)) {
+        //     Debug.LogWarning("Alpha1");
+        // }
+        
+        
         MotionDataCollection();
     }
 
@@ -697,7 +796,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         if (txtBallTouched != null)
             txtBallTouched.text = "Balls Touched: " + i_gameResult_touched_count.ToString("N0") + " / " + i_gameResult_total_balls.ToString("N0");
         if (txtGameLevel != null)
-            txtGameLevel.text = "Stage: " + currentStage.ToString();
+            txtGameLevel.text = "Target: " + currentStage.ToString();
         if (txtGameMode != null)
         {
             if (gamePlaymode == GamePlayMode.Left)
@@ -805,7 +904,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
     public void OnChildTriggerEnter(Collider other)
     {
-        Debug.LogWarning("CHILD OnTriggerEnter " + gameObject.name + " touching " + other.gameObject.name);
+        // Debug.LogWarning("CHILD OnTriggerEnter " + gameObject.name + " touching " + other.gameObject.name);
 
         //other.GetComponent<Rigidbody>().AddForce(-transform.up * 100);
         //float radius = 5.0f;
@@ -823,7 +922,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     void OnTriggerEnter(Collider other)
     //void OnCollisionEnter(Collider other)
     {
-        Debug.LogWarning("OnTriggerEnter " + gameObject.name + " touching " + other.gameObject.name);
+        // Debug.LogWarning("OnTriggerEnter " + gameObject.name + " touching " + other.gameObject.name);
         if (bGameRunning == false || bGamePause == true)
             return;
         if (gamePlaymode == GamePlayMode.Bilateral)
@@ -834,6 +933,9 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
  
             TMP_Text labelText = other.gameObject.transform.Find("Text").GetComponent<TMP_Text>();
             if (labelText.color == Color.cyan) {
+                labelText.color = Color.red;
+                i_gameResult_touched_count++;
+            } else if (labelText.color == cyan2) {
                 labelText.color = Color.red;
             }
         }
@@ -1157,6 +1259,8 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         f_gameResult_trajectory_distance_right = 0;
         leftGameOrigin.transform.position = middle_01_l.transform.position;
         rightGameOrigin.transform.position = middle_01_r.transform.position;
+
+        
         rightArmPosList.Clear();
         leftArmPosList.Clear();
         //pre_hand_pos_left = avatarData.GetAvatarLeftHandPosition();
@@ -1189,10 +1293,30 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
 
         }
         updateStageIndication();
+        dropdownStageSelect2 = GameObject.Find("Dropdown_StageSelect (1)");
+        buttonSpeed2= GameObject.Find("Button_Speed (1)");
+        
+        //move stage select dropdown
+       moveOriginCanvasObject(dropdownStageSelect2);
+       moveOriginCanvasObject(buttonSpeed2);
 
         cameraViewControl.updateCameraView();
         Debug.LogWarning("hand_l: " + hand_l.transform.position.ToString());
         Debug.LogWarning("left origin: " + leftGameOrigin.transform.position.ToString());
+    }
+
+    private void moveOriginCanvasObject(GameObject go) {
+
+        Vector3 localPosBefore = go.transform.localPosition;
+        Quaternion localRotBefore = go.transform.localRotation;
+        if (gamePlaymode == GamePlayMode.Right) {
+            go.transform.SetParent(rightGameOrigin.transform.Find("OriginCanvas"));
+            }
+        else {
+            go.transform.SetParent(leftGameOrigin.transform.Find("OriginCanvas"));
+            }
+        go.transform.localPosition = localPosBefore;
+        go.transform.localRotation = localRotBefore;
     }
     public void resetGames()
     {
@@ -1216,6 +1340,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     }
     public void changeStage(int manualChange = -1)
     {
+        Debug.LogWarning("changeStage");
         if (manualChange >= 1 && manualChange <= 8) {
             currentStage = manualChange;
         }
@@ -1238,6 +1363,12 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         //     gameLevel = max_gameLevel;
         // OpenLevelFile(gameLevel);
         // setGameLevel();
+        dropdownStageSelect.GetComponent<Dropdown>().onValueChanged.RemoveListener(OnDropdownStageSelectChanged);
+        dropdownStageSelect2.GetComponent<Dropdown>().onValueChanged.RemoveListener(OnDropdownStageSelectChanged);
+        dropdownStageSelect.GetComponent<Dropdown>().value = currentStage-1;
+        dropdownStageSelect2.GetComponent<Dropdown>().value = currentStage-1;
+        dropdownStageSelect.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
+        dropdownStageSelect2.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
         updateStageIndication();
         buttonClickSound();
     }
@@ -1245,32 +1376,39 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
 
     public void updateStageIndication() {
         foreach (Transform child in leftGameOrigin.transform.Find("OriginCanvas")) {
-            TMP_Text textMeshPro = child.Find("Text").GetComponent<TMP_Text>();
+            Transform textObj = child.Find("Text");
+            if (textObj == null) {continue;}
+            TMP_Text textMeshPro = textObj.GetComponent<TMP_Text>();
+            if (textMeshPro == null) {continue;}
 
-            if (textMeshPro != null) {
+            if (textMeshPro.color == Color.cyan) {
                 textMeshPro.color = Color.white;
-            }
+                }
+            else if (textMeshPro.color == Color.red || textMeshPro.color == cyan2) {
+                textMeshPro.color = Color.black;
+                }
+
             if (child.name == currentStage.ToString() + "_Label") {
-                textMeshPro.color = Color.cyan;
+                if (textMeshPro.color == Color.white) {textMeshPro.color = Color.cyan;}
+                else if (textMeshPro.color == Color.black) {textMeshPro.color = cyan2;}
             }
         }
         foreach (Transform child in rightGameOrigin.transform.Find("OriginCanvas")) {
-            // if (child == null) {Debug.LogWarning("child null");}
-            // if (child.Find("Text") == null) {Debug.LogWarning("child text object null");}
-            if (child.Find("Text") == null) { continue;}
-            // Debug.LogWarning("right update stage indication");
-            TMP_Text textMeshPro = child.Find("Text").GetComponent<TMP_Text>();
+            Transform textObj = child.Find("Text");
+            if (textObj == null) {continue;}
+            TMP_Text textMeshPro = textObj.GetComponent<TMP_Text>();
+            if (textMeshPro == null) {continue;}
 
+            if (textMeshPro.color == Color.cyan) {
+                textMeshPro.color = Color.white;
+                }
+            else if (textMeshPro.color == Color.red || textMeshPro.color == cyan2) {
+                textMeshPro.color = Color.black;
+                }
 
-
-
-            if (textMeshPro == null) {
-                break;
-            }
-
-           if (textMeshPro.color == Color.cyan) { textMeshPro.color = Color.white;}
             if (child.name == currentStage.ToString() + "_Label") {
-                textMeshPro.color = Color.cyan;
+                if (textMeshPro.color == Color.white) {textMeshPro.color = Color.cyan;}
+                else if (textMeshPro.color == Color.black) {textMeshPro.color = cyan2;}
             }
         }
 
@@ -1280,19 +1418,25 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
         lineRendererTargetRight.positionCount = 2;
 
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Left) {
-            lineRendererTargetLeft.positionCount = 2;
-            lineRendererTargetLeft.SetPosition(0, leftGameOrigin.transform.position);
-            lineRendererTargetLeft.SetPosition(1, leftGameOrigin.transform.position + targetLocations[currentStage-1]);
-            Debug.LogWarning("Left target to " + targetLocations[currentStage-1].ToString());
+            renderTarget(lineRendererTargetLeft, leftGameOrigin);
         }
         if (gamePlaymode == GamePlayMode.Bilateral || gamePlaymode == GamePlayMode.Right) {
-            lineRendererTargetRight.positionCount = 2;
-            lineRendererTargetRight.SetPosition(0, rightGameOrigin.transform.position);
-            Debug.LogWarning("currentStage: " + currentStage.ToString());
-            lineRendererTargetRight.SetPosition(1, rightGameOrigin.transform.position + targetLocations[currentStage-1]);
+            renderTarget(lineRendererTargetLeft, rightGameOrigin);
+
         }
 
         
+    }
+
+    private void renderTarget(LineRenderer lr, GameObject origin) {
+        float offsetMagnitude = 0.01f;
+
+        lr.positionCount = 2;
+        Vector3 heightOffset = (GetAxisVector(selectedPlane, -1.0f, -1.0f) + new Vector3(1f,1f,1f)) * offsetMagnitude;
+        lr.SetPosition(0, origin.transform.position + heightOffset);
+        lr.SetPosition(1, origin.transform.position + targetLocations[currentStage-1] + heightOffset);
+        Debug.LogWarning("Left target to " + targetLocations[currentStage-1].ToString());
+
     }
     public void levelDown()
     {
@@ -1429,12 +1573,23 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
                 gameButtonObj.GetComponent<Button>().onClick.AddListener(levelDown);
             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Exit");
             if (gameButtonObj != null)
-                gameButtonObj.GetComponent<Button>().onClick.AddListener(Quit);
-            gameButtonObj = getChildGameObject(gameGUIObj1, "Dropdown_StageSelect");
+                gameButtonObj.GetComponent<Button>().onClick.AddListener(Quit);   
+
+             gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Start");
             if (gameButtonObj != null)
-                gameButtonObj.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
+                gameButtonObj.GetComponent<Button>().onClick.AddListener(startRecordMotorLearning);
+            gameButtonObj = getChildGameObject(gameGUIObj1, "Button_Stop");
+            if (gameButtonObj != null)
+                gameButtonObj.GetComponent<Button>().onClick.AddListener(stopRecordMotorLearning);
+            dropdownStageSelect = getChildGameObject(gameGUIObj1, "Dropdown_StageSelect");
+                dropdownStageSelect.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
              dropdownViewSelect = getChildGameObject(gameGUIObj1, "Dropdown_ViewSelect");
                 dropdownViewSelect.GetComponent<Dropdown>().onValueChanged.AddListener(OnViewSelectChanged);
+            dropdownStageSelect2.GetComponent<Dropdown>().onValueChanged.AddListener(OnDropdownStageSelectChanged);
+            buttonSpeed = getChildGameObject(gameGUIObj1, "Button_Speed");
+                buttonSpeed.GetComponent<Button>().onClick.AddListener(changeSpeed);
+            buttonSpeed2.GetComponent<Button>().onClick.AddListener(changeSpeed);
+
             // gameButtonObj = getChildGameObject(gameGUIObj1, "Button_BranchUp");
             // if (gameButtonObj != null)
                 // gameButtonObj.GetComponent<Button>().onClick.AddListener(branchUp);
@@ -1449,6 +1604,7 @@ public class MotorLearningGameOculusTouch : MonoBehaviour {
     public void OnViewSelectChanged(int index) {
         //reset dropdown
         dropdownViewSelect.GetComponent<Dropdown>().value = 0;
+
         setCameraView(index-1);
     }
 
